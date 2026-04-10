@@ -440,8 +440,36 @@ function initMusicPlayer() {
     // 可以添加本地音乐或使用其他免费音乐源
     const songs = [
         {
-            title: '温柔旋律',
-            src: '' // 用户可以自行添加音乐
+            title: '小幸运 - 田馥甄',
+            src: 'https://music.163.com/song/media/outer/url?id=409872555.mp3'
+        },
+        {
+            title: '告白气球 - 周杰伦',
+            src: 'https://music.163.com/song/media/outer/url?id=416892104.mp3'
+        },
+        {
+            title: '甜甜的 - 周杰伦',
+            src: 'https://music.163.com/song/media/outer/url?id=185809.mp3'
+        },
+        {
+            title: '简单爱 - 周杰伦',
+            src: 'https://music.163.com/song/media/outer/url?id=185810.mp3'
+        },
+        {
+            title: '遇见 - 孙燕姿',
+            src: 'https://music.163.com/song/media/outer/url?id=28391863.mp3'
+        },
+        {
+            title: '今天你要嫁给我 - 陶喆/蔡依林',
+            src: 'https://music.163.com/song/media/outer/url?id=5257138.mp3'
+        },
+        {
+            title: '情歌 - 梁静茹',
+            src: 'https://music.163.com/song/media/outer/url?id=257982.mp3'
+        },
+        {
+            title: '最重要的决定 - 范玮琪',
+            src: 'https://music.163.com/song/media/outer/url?id=257932.mp3'
         }
     ];
 
