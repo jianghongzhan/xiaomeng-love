@@ -428,62 +428,121 @@ function initMusicPlayer() {
     const playBtn = document.getElementById('playBtn');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
+    const addMusicBtn = document.getElementById('addMusicBtn');
     const progressBar = document.getElementById('progressBar');
     const titleEl = player?.querySelector('.music-title');
+    const musicModal = document.getElementById('musicModal');
+    const musicForm = document.getElementById('musicForm');
+    const musicFileInput = document.getElementById('musicFile');
+    const musicList = document.getElementById('musicList');
 
     // 创建音频元素
     const audio = new Audio();
     let currentIndex = 0;
     let isPlaying = false;
+    let songs = [];
 
-    // 由于跨域限制，使用备用方案
-    // 可以添加本地音乐或使用其他免费音乐源
-    const songs = [
-        {
-            title: '小幸运 - 田馥甄',
-            src: 'https://music.163.com/song/media/outer/url?id=409872555.mp3'
-        },
-        {
-            title: '告白气球 - 周杰伦',
-            src: 'https://music.163.com/song/media/outer/url?id=416892104.mp3'
-        },
-        {
-            title: '甜甜的 - 周杰伦',
-            src: 'https://music.163.com/song/media/outer/url?id=185809.mp3'
-        },
-        {
-            title: '简单爱 - 周杰伦',
-            src: 'https://music.163.com/song/media/outer/url?id=185810.mp3'
-        },
-        {
-            title: '遇见 - 孙燕姿',
-            src: 'https://music.163.com/song/media/outer/url?id=28391863.mp3'
-        },
-        {
-            title: '今天你要嫁给我 - 陶喆/蔡依林',
-            src: 'https://music.163.com/song/media/outer/url?id=5257138.mp3'
-        },
-        {
-            title: '情歌 - 梁静茹',
-            src: 'https://music.163.com/song/media/outer/url?id=257982.mp3'
-        },
-        {
-            title: '最重要的决定 - 范玮琪',
-            src: 'https://music.163.com/song/media/outer/url?id=257932.mp3'
+    // IndexedDB 存储音乐
+    const DB_NAME = 'xiaomeng_music_db';
+    const STORE_NAME = 'songs';
+    let db = null;
+
+    // 初始化 IndexedDB
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const database = event.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    // 保存音乐到 IndexedDB
+    async function saveSong(song) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.add(song);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 加载所有音乐
+    async function loadSongs() {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 删除音乐
+    async function deleteSong(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 渲染音乐列表
+    function renderMusicList() {
+        if (songs.length === 0) {
+            musicList.innerHTML = '<p style="font-size: 0.9rem; color: #999;">暂无音乐，请上传</p>';
+            return;
         }
-    ];
+
+        musicList.innerHTML = songs.map((song, index) => `
+            <div class="music-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f5f5f5; border-radius: 8px; margin-bottom: 8px;">
+                <span style="font-size: 0.9rem;">${index + 1}. ${song.title}</span>
+                <button onclick="removeSong(${index})" style="background: none; border: none; color: #ff4757; cursor: pointer;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // 全局删除函数
+    window.removeSong = async function(index) {
+        if (confirm('确定删除这首歌吗？')) {
+            await deleteSong(songs[index].id);
+            songs.splice(index, 1);
+            renderMusicList();
+            if (songs.length > 0) {
+                loadSong(0);
+            } else {
+                titleEl.textContent = '点击添加音乐';
+            }
+        }
+    };
 
     function loadSong(index) {
-        if (songs[index] && songs[index].src) {
-            audio.src = songs[index].src;
+        if (songs[index] && songs[index].data) {
+            audio.src = songs[index].data;
             if (titleEl) titleEl.textContent = songs[index].title;
+            console.log('🎵 加载歌曲:', songs[index].title);
         } else {
             if (titleEl) titleEl.textContent = '请添加音乐';
         }
     }
 
     function togglePlay() {
-        if (!audio.src) {
+        if (songs.length === 0) {
             alert('请先添加音乐文件');
             return;
         }
@@ -492,13 +551,68 @@ function initMusicPlayer() {
             audio.pause();
             playBtn.innerHTML = '<i class="fas fa-play"></i>';
         } else {
-            audio.play().catch(() => {
-                console.log('播放失败，可能需要用户交互');
+            audio.play().catch(e => {
+                console.log('播放失败:', e);
             });
             playBtn.innerHTML = '<i class="fas fa-pause"></i>';
         }
         isPlaying = !isPlaying;
     }
+
+    // 打开添加音乐模态框
+    addMusicBtn?.addEventListener('click', () => {
+        musicModal?.classList.add('active');
+        renderMusicList();
+    });
+
+    // 关闭模态框
+    musicModal?.querySelector('.modal-close')?.addEventListener('click', () => {
+        musicModal.classList.remove('active');
+    });
+
+    musicModal?.addEventListener('click', (e) => {
+        if (e.target === musicModal) {
+            musicModal.classList.remove('active');
+        }
+    });
+
+    // 上传音乐
+    musicForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = musicFileInput.files[0];
+        if (!file) {
+            alert('请选择音乐文件');
+            return;
+        }
+
+        // 检查文件大小（限制 20MB）
+        if (file.size > 20 * 1024 * 1024) {
+            alert('音乐文件不能超过 20MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const song = {
+                id: Date.now(),
+                title: file.name.replace(/\.[^/.]+$/, ''), // 移除扩展名
+                data: e.target.result
+            };
+
+            try {
+                await saveSong(song);
+                songs.push(song);
+                renderMusicList();
+                loadSong(songs.length - 1);
+                musicFileInput.value = '';
+                alert('音乐添加成功！');
+            } catch (error) {
+                console.error('保存音乐失败:', error);
+                alert('保存失败，请重试');
+            }
+        };
+        reader.readAsDataURL(file);
+    });
 
     // 最小化/展开播放器
     toggle?.addEventListener('click', () => {
@@ -510,6 +624,7 @@ function initMusicPlayer() {
 
     // 上一首
     prevBtn?.addEventListener('click', () => {
+        if (songs.length === 0) return;
         currentIndex = (currentIndex - 1 + songs.length) % songs.length;
         loadSong(currentIndex);
         if (isPlaying) audio.play();
@@ -517,6 +632,7 @@ function initMusicPlayer() {
 
     // 下一首
     nextBtn?.addEventListener('click', () => {
+        if (songs.length === 0) return;
         currentIndex = (currentIndex + 1) % songs.length;
         loadSong(currentIndex);
         if (isPlaying) audio.play();
@@ -527,6 +643,30 @@ function initMusicPlayer() {
         const progress = (audio.currentTime / audio.duration) * 100;
         if (progressBar) progressBar.style.width = progress + '%';
     });
+
+    // 播放结束
+    audio.addEventListener('ended', () => {
+        if (songs.length > 1) {
+            currentIndex = (currentIndex + 1) % songs.length;
+            loadSong(currentIndex);
+            audio.play();
+        } else {
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            isPlaying = false;
+        }
+    });
+
+    // 初始化
+    initDB().then(async () => {
+        songs = await loadSongs();
+        console.log('🎵 加载了', songs.length, '首歌曲');
+        if (songs.length > 0) {
+            loadSong(0);
+        }
+    }).catch(err => {
+        console.error('IndexedDB 初始化失败:', err);
+    });
+}
 
     // 播放结束
     audio.addEventListener('ended', () => {

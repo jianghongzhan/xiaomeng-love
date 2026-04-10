@@ -279,7 +279,7 @@
             <i class="fas fa-music"></i>
         </button>
         <div class="music-info">
-            <span class="music-title">温柔旋律</span>
+            <span class="music-title">点击添加音乐</span>
             <div class="music-progress">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
@@ -288,6 +288,28 @@
             <button class="music-btn" id="prevBtn"><i class="fas fa-step-backward"></i></button>
             <button class="music-btn play-btn" id="playBtn"><i class="fas fa-play"></i></button>
             <button class="music-btn" id="nextBtn"><i class="fas fa-step-forward"></i></button>
+            <button class="music-btn" id="addMusicBtn" title="添加音乐"><i class="fas fa-plus"></i></button>
+        </div>
+    </div>
+
+    <!-- 添加音乐模态框 -->
+    <div class="modal" id="musicModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <span class="modal-close">&times;</span>
+            <h3>🎵 添加音乐</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                支持上传本地 MP3 文件
+            </p>
+            <form id="musicForm">
+                <div class="form-group">
+                    <label>选择音乐文件</label>
+                    <input type="file" id="musicFile" accept="audio/*" style="padding: 10px;">
+                </div>
+                <button type="submit" class="submit-btn">添加到播放列表</button>
+            </form>
+            <div id="musicList" style="margin-top: 20px;">
+                <p style="font-size: 0.9rem; color: #999;">暂无音乐</p>
+            </div>
         </div>
     </div>
 
