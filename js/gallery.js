@@ -107,7 +107,7 @@ class Gallery {
     }
 
     // 更新 GitHub 上的 photos.json
-    async updateGithubPhotos(photos) {
+    async updateGithubPhotos(photos, retryCount = 0) {
         const token = this.getGithubToken();
         if (!token) {
             console.log('⚠️ 未配置 GitHub Token，跳过同步');
@@ -115,6 +115,7 @@ class Gallery {
         }
 
         try {
+            // 每次都重新获取最新的 SHA，避免 409 冲突
             const { sha } = await this.getGithubFile();
 
             const content = JSON.stringify(photos, null, 2);
@@ -145,6 +146,13 @@ class Gallery {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('GitHub API 返回错误:', errorData);
+
+                // 409 冲突：重试一次
+                if (response.status === 409 && retryCount < 2) {
+                    console.log('⚠️ 文件冲突，正在重试...');
+                    await new Promise(r => setTimeout(r, 500)); // 等待 500ms
+                    return this.updateGithubPhotos(photos, retryCount + 1);
+                }
 
                 if (response.status === 401) {
                     throw new Error('Token 无效或已过期，请重新生成');
