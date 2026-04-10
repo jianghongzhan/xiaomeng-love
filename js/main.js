@@ -442,6 +442,15 @@ function initMusicPlayer() {
     let isPlaying = false;
     let songs = [];
 
+    // 默认音乐列表（存储在 GitHub 仓库中，永久可访问）
+    const defaultSongs = [
+        {
+            id: 'default_1',
+            title: '悦神 (念白版) - KBShinya',
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yueshen.mp3'
+        }
+    ];
+
     // IndexedDB 存储音乐
     const DB_NAME = 'xiaomeng_music_db';
     const STORE_NAME = 'songs';
@@ -658,13 +667,27 @@ function initMusicPlayer() {
 
     // 初始化
     initDB().then(async () => {
-        songs = await loadSongs();
-        console.log('🎵 加载了', songs.length, '首歌曲');
+        const localSongs = await loadSongs();
+        console.log('🎵 本地存储了', localSongs.length, '首歌曲');
+
+        // 如果有本地音乐，使用本地的；否则使用默认音乐
+        if (localSongs.length > 0) {
+            songs = localSongs;
+        } else {
+            songs = defaultSongs;
+            console.log('🎵 使用默认音乐列表');
+        }
+
         if (songs.length > 0) {
             loadSong(0);
         }
     }).catch(err => {
         console.error('IndexedDB 初始化失败:', err);
+        // 失败时使用默认音乐
+        songs = defaultSongs;
+        if (songs.length > 0) {
+            loadSong(0);
+        }
     });
 }
 
