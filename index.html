@@ -18,6 +18,9 @@
             <a href="#lovenotes" class="nav-link">情话机</a>
             <a href="#timeline" class="nav-link">时光轴</a>
             <a href="#gallery" class="nav-link">相册</a>
+            <a href="#wishes" class="nav-link">许愿瓶</a>
+            <a href="#checkin" class="nav-link">打卡</a>
+            <a href="#fortune" class="nav-link">抽签</a>
             <a href="#messages" class="nav-link">留言板</a>
         </div>
         <div class="menu-toggle">
@@ -315,6 +318,93 @@
             </div>
         </div>
     </div>
+
+    <!-- 桌面宠物 -->
+    <div class="desktop-pet" id="desktopPet">
+        <div class="pet-container">
+            <div class="pet-emoji">🐱</div>
+            <div class="pet-speech" id="petSpeech">喵~</div>
+        </div>
+    </div>
+
+    <!-- 许愿瓶模块 -->
+    <section id="wishes" class="wishes-section">
+        <div class="section-container">
+            <h2 class="section-title">🌟 许愿瓶</h2>
+            <p class="section-subtitle">写下你的愿望，让星星带走它</p>
+
+            <div class="wish-bottle">
+                <div class="bottle-glass">
+                    <div class="bottle-stars" id="bottleStars"></div>
+                </div>
+            </div>
+
+            <div class="wish-form">
+                <input type="text" id="wishInput" placeholder="写下你的愿望..." maxlength="50">
+                <button class="wish-btn" id="wishBtn">
+                    <i class="fas fa-magic"></i> 许愿
+                </button>
+            </div>
+
+            <div class="wishes-count">
+                已许下 <span id="wishCount">0</span> 个愿望 ✨
+            </div>
+        </div>
+    </section>
+
+    <!-- 每日签到 -->
+    <section id="checkin" class="checkin-section">
+        <div class="section-container">
+            <h2 class="section-title">📅 每日打卡</h2>
+            <p class="section-subtitle">记录我们在一起的每一天</p>
+
+            <div class="checkin-card">
+                <div class="checkin-status" id="checkinStatus">
+                    <span class="checkin-emoji">😴</span>
+                    <p>今天还没打卡哦</p>
+                </div>
+                <button class="checkin-btn" id="checkinBtn">
+                    <i class="fas fa-heart"></i> 打卡
+                </button>
+                <div class="checkin-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="totalDays">0</span>
+                        <span class="stat-label">累计打卡</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="continuousDays">0</span>
+                        <span class="stat-label">连续打卡</span>
+                    </div>
+                </div>
+                <div class="checkin-calendar" id="checkinCalendar"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 幸运抽签 -->
+    <section id="fortune" class="fortune-section">
+        <div class="section-container">
+            <h2 class="section-title">🎋 幸运签</h2>
+            <p class="section-subtitle">抽取今日运势</p>
+
+            <div class="fortune-container">
+                <div class="fortune-stick" id="fortuneStick">
+                    <div class="stick-body">
+                        <div class="stick-top"></div>
+                        <div class="stick-content" id="fortuneContent">
+                            点击抽签
+                        </div>
+                    </div>
+                </div>
+                <button class="fortune-btn" id="fortuneBtn">
+                    <i class="fas fa-hand-pointer"></i> 抽签
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 爱心点击特效容器 -->
+    <div id="clickEffects"></div>
 
     <!-- 返回顶部 -->
     <button class="back-to-top" id="backToTop">

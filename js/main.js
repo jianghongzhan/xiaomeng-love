@@ -32,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initBackToTop();
     initParticles();
     initFireworks();
+    initDesktopPet();
+    initClickEffects();
+    initWishes();
+    initCheckin();
+    initFortune();
 
     // 初始化圣诞树为散开状态
     setTimeout(() => {
@@ -1081,4 +1086,401 @@ function initFireworks() {
 
     // 导出创建烟花函数
     window.fireworksCanvas = { createFirework };
+}
+
+// ========== 桌面宠物 ==========
+function initDesktopPet() {
+    const pet = document.getElementById('desktopPet');
+    const speech = document.getElementById('petSpeech');
+    if (!pet) return;
+
+    const messages = [
+        '喵~ 你来啦！',
+        '今天也要开心哦~',
+        '小萌最可爱了！',
+        '想你了呢~',
+        '点击我有惊喜！',
+        '在一起真幸福！',
+        '今天天气真好~',
+        '❤️ 爱你！',
+        '要一直开心哦~',
+        '喵喵喵~'
+    ];
+
+    // 随机移动
+    let posX = window.innerWidth - 100;
+    let posY = window.innerHeight - 200;
+    let isMoving = false;
+
+    function randomMove() {
+        if (isMoving) return;
+        isMoving = true;
+
+        const newX = Math.random() * (window.innerWidth - 100);
+        const newY = Math.random() * (window.innerHeight - 300) + 100;
+
+        pet.style.transition = 'all 2s ease';
+        pet.style.left = newX + 'px';
+        pet.style.right = 'auto';
+        pet.style.top = newY + 'px';
+        pet.style.bottom = 'auto';
+
+        setTimeout(() => {
+            isMoving = false;
+        }, 2000);
+    }
+
+    // 每 10-30 秒随机移动一次
+    setInterval(() => {
+        if (Math.random() > 0.5) {
+            randomMove();
+        }
+    }, 10000 + Math.random() * 20000);
+
+    // 点击互动
+    pet.addEventListener('click', () => {
+        // 显示随机消息
+        const msg = messages[Math.floor(Math.random() * messages.length)];
+        speech.textContent = msg;
+        speech.classList.add('show');
+
+        // 添加跳跃动画
+        pet.querySelector('.pet-emoji').style.animation = 'none';
+        setTimeout(() => {
+            pet.querySelector('.pet-emoji').style.animation = 'petBounce 2s ease-in-out infinite';
+        }, 10);
+
+        // 隐藏消息
+        setTimeout(() => {
+            speech.classList.remove('show');
+        }, 2000);
+    });
+
+    // 初始位置
+    pet.style.left = posX + 'px';
+    pet.style.right = 'auto';
+    pet.style.top = posY + 'px';
+    pet.style.bottom = 'auto';
+}
+
+// ========== 点击特效 ==========
+function initClickEffects() {
+    const container = document.getElementById('clickEffects');
+    if (!container) return;
+
+    const effects = ['❤️', '💕', '💗', '💖', '✨', '🌟', '🐾', '🌸'];
+
+    document.addEventListener('click', (e) => {
+        // 忽略按钮、输入框等交互元素上的点击
+        if (e.target.tagName === 'BUTTON' ||
+            e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.closest('button') ||
+            e.target.closest('.desktop-pet')) {
+            return;
+        }
+
+        const effect = document.createElement('div');
+        effect.className = 'click-heart';
+        effect.textContent = effects[Math.floor(Math.random() * effects.length)];
+        effect.style.left = (e.clientX - 15) + 'px';
+        effect.style.top = (e.clientY - 15) + 'px';
+
+        container.appendChild(effect);
+
+        setTimeout(() => effect.remove(), 1000);
+    });
+}
+
+// ========== 许愿瓶 ==========
+function initWishes() {
+    const wishInput = document.getElementById('wishInput');
+    const wishBtn = document.getElementById('wishBtn');
+    const bottleStars = document.getElementById('bottleStars');
+    const wishCount = document.getElementById('wishCount');
+    if (!wishBtn || !bottleStars) return;
+
+    const STORAGE_KEY = 'xiaomeng_wishes';
+
+    // 加载已有愿望
+    function loadWishes() {
+        const wishes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        wishCount.textContent = wishes.length;
+
+        // 显示瓶子里的星星（最多显示 20 个）
+        bottleStars.innerHTML = '';
+        const displayCount = Math.min(wishes.length, 20);
+        for (let i = 0; i < displayCount; i++) {
+            const star = document.createElement('span');
+            star.className = 'star-item';
+            star.textContent = '⭐';
+            star.style.animationDelay = (i * 0.1) + 's';
+            bottleStars.appendChild(star);
+        }
+    }
+
+    // 创建飘走的星星
+    function createFlyingStar(text) {
+        const star = document.createElement('div');
+        star.className = 'flying-star';
+        star.textContent = '🌟';
+
+        const wishBtnRect = wishBtn.getBoundingClientRect();
+        star.style.left = wishBtnRect.left + 'px';
+        star.style.top = wishBtnRect.top + 'px';
+
+        document.body.appendChild(star);
+
+        setTimeout(() => star.remove(), 3000);
+    }
+
+    // 许愿
+    wishBtn.addEventListener('click', () => {
+        const wish = wishInput.value.trim();
+        if (!wish) {
+            alert('请输入你的愿望~');
+            return;
+        }
+
+        // 保存愿望
+        const wishes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        wishes.push({
+            text: wish,
+            time: new Date().toLocaleString('zh-CN')
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+
+        // 飘走动画
+        createFlyingStar(wish);
+
+        // 清空输入
+        wishInput.value = '';
+
+        // 更新显示
+        loadWishes();
+
+        // 提示
+        alert('✨ 愿望已送出，星星会帮你实现的！');
+    });
+
+    // 初始加载
+    loadWishes();
+}
+
+// ========== 每日签到 ==========
+function initCheckin() {
+    const checkinBtn = document.getElementById('checkinBtn');
+    const checkinStatus = document.getElementById('checkinStatus');
+    const totalDaysEl = document.getElementById('totalDays');
+    const continuousDaysEl = document.getElementById('continuousDays');
+    const calendarEl = document.getElementById('checkinCalendar');
+    if (!checkinBtn) return;
+
+    const STORAGE_KEY = 'xiaomeng_checkin';
+
+    // 获取今日日期字符串
+    function getTodayStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    // 加载签到数据
+    function loadData() {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    }
+
+    // 保存签到数据
+    function saveData(data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // 计算连续签到天数
+    function getContinuousDays(data) {
+        let count = 0;
+        let today = new Date();
+
+        while (true) {
+            const dateStr = today.toISOString().split('T')[0];
+            if (data.dates && data.dates.includes(dateStr)) {
+                count++;
+                today.setDate(today.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+        return count;
+    }
+
+    // 渲染日历
+    function renderCalendar(data) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const today = now.getDate();
+        const todayStr = getTodayStr();
+
+        // 获取本月第一天是星期几
+        const firstDay = new Date(year, month, 1).getDay();
+        // 获取本月天数
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        calendarEl.innerHTML = '';
+
+        // 添加空白格子
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day';
+            calendarEl.appendChild(empty);
+        }
+
+        // 添加日期
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day';
+            dayEl.textContent = day;
+
+            if (data.dates && data.dates.includes(dateStr)) {
+                dayEl.classList.add('checked');
+            }
+            if (day === today) {
+                dayEl.classList.add('today');
+            }
+
+            calendarEl.appendChild(dayEl);
+        }
+    }
+
+    // 更新显示
+    function updateDisplay() {
+        const data = loadData();
+
+        totalDaysEl.textContent = data.dates ? data.dates.length : 0;
+        continuousDaysEl.textContent = getContinuousDays(data);
+
+        // 检查今日是否已签到
+        if (data.dates && data.dates.includes(getTodayStr())) {
+            checkinBtn.disabled = true;
+            checkinBtn.innerHTML = '<i class="fas fa-check"></i> 已打卡';
+            checkinStatus.innerHTML = `
+                <span class="checkin-emoji">😊</span>
+                <p>今天已打卡，明天见！</p>
+            `;
+        } else {
+            checkinBtn.disabled = false;
+            checkinBtn.innerHTML = '<i class="fas fa-heart"></i> 打卡';
+            checkinStatus.innerHTML = `
+                <span class="checkin-emoji">😴</span>
+                <p>今天还没打卡哦</p>
+            `;
+        }
+
+        renderCalendar(data);
+    }
+
+    // 签到
+    checkinBtn.addEventListener('click', () => {
+        const data = loadData();
+        const today = getTodayStr();
+
+        if (!data.dates) {
+            data.dates = [];
+        }
+
+        if (!data.dates.includes(today)) {
+            data.dates.push(today);
+            saveData(data);
+            updateDisplay();
+
+            // 庆祝动画
+            checkinStatus.innerHTML = `
+                <span class="checkin-emoji">🎉</span>
+                <p>打卡成功！又过了一天~</p>
+            `;
+        }
+    });
+
+    // 初始显示
+    updateDisplay();
+}
+
+// ========== 幸运抽签 ==========
+function initFortune() {
+    const fortuneBtn = document.getElementById('fortuneBtn');
+    const fortuneStick = document.getElementById('fortuneStick');
+    const fortuneContent = document.getElementById('fortuneContent');
+    if (!fortuneBtn) return;
+
+    const fortunes = [
+        '💕 今天会遇到让你心动的人',
+        '🌟 运势大吉，心想事成',
+        '🌸 桃花朵朵开，爱情甜蜜',
+        '💪 事业顺利，步步高升',
+        '💰 财运亨通，小确幸不断',
+        '🌙 平安顺遂，万事如意',
+        '🎸 有意外惊喜等着你',
+        '📚 学习进步，灵感满满',
+        '🏃 健康活力，精神百倍',
+        '🎁 有好事将近，敬请期待',
+        '🌈 雨过天晴，好运将至',
+        '🦋 蝴蝶自来，美好相遇',
+        '🍀 小幸运降临，注意发现',
+        '🌺 缘分天定，珍惜眼前',
+        '💫 愿望即将实现',
+        '🌹 浪漫邂逅，心动时刻',
+        '☀️ 阳光灿烂，心情美丽',
+        '🎨 创意无限，灵感迸发',
+        '🕊️ 平安喜乐，岁月静好',
+        '💝 爱情升温，甜蜜加倍'
+    ];
+
+    const STORAGE_KEY = 'xiaomeng_fortune';
+
+    // 获取今日运势
+    function getTodayFortune() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const data = JSON.parse(saved);
+            if (data.date === new Date().toISOString().split('T')[0]) {
+                return data.fortune;
+            }
+        }
+        return null;
+    }
+
+    // 保存今日运势
+    function saveTodayFortune(fortune) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            date: new Date().toISOString().split('T')[0],
+            fortune: fortune
+        }));
+    }
+
+    // 抽签
+    fortuneBtn.addEventListener('click', () => {
+        // 检查是否已抽过
+        const savedFortune = getTodayFortune();
+        if (savedFortune) {
+            fortuneContent.textContent = savedFortune;
+            alert('🎋 今日已抽签，明天再来哦~');
+            return;
+        }
+
+        // 摇签动画
+        fortuneStick.classList.add('shaking');
+
+        setTimeout(() => {
+            fortuneStick.classList.remove('shaking');
+
+            // 随机抽签
+            const fortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+            fortuneContent.textContent = fortune;
+            saveTodayFortune(fortune);
+        }, 500);
+    });
+
+    // 如果今天已抽过，显示结果
+    const savedFortune = getTodayFortune();
+    if (savedFortune) {
+        fortuneContent.textContent = savedFortune;
+    }
 }

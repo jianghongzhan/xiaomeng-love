@@ -1310,3 +1310,431 @@ body {
         font-size: 1.2rem;
     }
 }
+
+/* ===== 桌面宠物 ===== */
+.desktop-pet {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    z-index: 999;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.desktop-pet:hover {
+    transform: scale(1.1);
+}
+
+.pet-container {
+    position: relative;
+}
+
+.pet-emoji {
+    font-size: 3rem;
+    animation: petBounce 2s ease-in-out infinite;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+}
+
+@keyframes petBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.pet-speech {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.pet-speech::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: white;
+}
+
+.desktop-pet:hover .pet-speech,
+.pet-speech.show {
+    opacity: 1;
+    bottom: calc(100% + 5px);
+}
+
+/* ===== 许愿瓶 ===== */
+.wishes-section {
+    padding: 100px 20px;
+    background: linear-gradient(180deg, #FFF5F8 0%, #E8F4FD 100%);
+}
+
+.wish-bottle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.bottle-glass {
+    width: 150px;
+    height: 200px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(200,230,255,0.6) 100%);
+    border-radius: 20px 20px 40px 40px;
+    border: 3px solid rgba(255,255,255,0.9);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 30px rgba(255,255,255,0.5),
+        0 10px 40px rgba(100,150,200,0.2);
+}
+
+.bottle-glass::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    width: 20px;
+    height: 40px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px;
+}
+
+.bottle-stars {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-end;
+    justify-content: center;
+    padding: 10px;
+    gap: 5px;
+}
+
+.star-item {
+    font-size: 1.2rem;
+    animation: starTwinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+.wish-form {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+#wishInput {
+    padding: 15px 25px;
+    border: 2px solid var(--light-pink);
+    border-radius: 30px;
+    font-size: 1rem;
+    width: 300px;
+    max-width: 100%;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+#wishInput:focus {
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 20px var(--shadow);
+}
+
+.wish-btn {
+    padding: 15px 30px;
+    background: linear-gradient(135deg, var(--primary-pink), var(--deep-pink));
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.wish-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+.wishes-count {
+    font-size: 1.1rem;
+    color: var(--primary-pink);
+}
+
+/* 飘走的星星动画 */
+.flying-star {
+    position: fixed;
+    font-size: 1.5rem;
+    pointer-events: none;
+    z-index: 9999;
+    animation: flyUp 3s ease-out forwards;
+}
+
+@keyframes flyUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-500px) scale(0.5);
+    }
+}
+
+/* ===== 每日签到 ===== */
+.checkin-section {
+    padding: 100px 20px;
+    background: linear-gradient(180deg, #E8F4FD 0%, #FFF5F8 100%);
+}
+
+.checkin-card {
+    max-width: 500px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 25px;
+    padding: 40px;
+    box-shadow: 0 15px 50px rgba(255,105,180,0.15);
+    text-align: center;
+}
+
+.checkin-status {
+    margin-bottom: 25px;
+}
+
+.checkin-emoji {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.checkin-btn {
+    padding: 18px 50px;
+    background: linear-gradient(135deg, var(--primary-pink), var(--deep-pink));
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 25px;
+}
+
+.checkin-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px var(--shadow);
+}
+
+.checkin-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.checkin-stats {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    margin-bottom: 25px;
+}
+
+.checkin-stats .stat-item {
+    text-align: center;
+}
+
+.checkin-stats .stat-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-pink);
+}
+
+.checkin-stats .stat-label {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.checkin-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.calendar-day {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    background: #f5f5f5;
+    color: #999;
+}
+
+.calendar-day.checked {
+    background: linear-gradient(135deg, var(--primary-pink), var(--deep-pink));
+    color: white;
+}
+
+.calendar-day.today {
+    border: 2px solid var(--primary-pink);
+}
+
+/* ===== 幸运抽签 ===== */
+.fortune-section {
+    padding: 100px 20px;
+    background: linear-gradient(180deg, #FFF5F8 0%, #FFE4EC 100%);
+}
+
+.fortune-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.fortune-stick {
+    perspective: 1000px;
+}
+
+.stick-body {
+    width: 200px;
+    height: 300px;
+    background: linear-gradient(180deg, #8B4513 0%, #654321 100%);
+    border-radius: 10px 10px 5px 5px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    transition: transform 0.5s ease;
+}
+
+.stick-body:hover {
+    transform: rotateX(-5deg);
+}
+
+.stick-top {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 40px;
+    background: var(--gold);
+    border-radius: 5px 5px 0 0;
+}
+
+.stick-content {
+    background: #FFF8DC;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 160px;
+    text-align: center;
+    font-size: 1rem;
+    color: #8B4513;
+    line-height: 1.6;
+    box-shadow: inset 0 0 10px rgba(139,69,19,0.1);
+}
+
+.fortune-btn {
+    padding: 15px 40px;
+    background: linear-gradient(135deg, var(--gold), #FFA500);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.fortune-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255,215,0,0.4);
+}
+
+/* 抽签动画 */
+.fortune-stick.shaking .stick-body {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+
+/* ===== 点击特效 ===== */
+#clickEffects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.click-heart {
+    position: absolute;
+    font-size: 1.5rem;
+    pointer-events: none;
+    animation: heartFloat 1s ease-out forwards;
+}
+
+@keyframes heartFloat {
+    0% {
+        opacity: 1;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.5) rotate(-15deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1) rotate(15deg) translateY(-50px);
+    }
+}
+
+/* ===== 响应式补充 ===== */
+@media (max-width: 768px) {
+    .desktop-pet {
+        bottom: 80px;
+        right: 15px;
+    }
+
+    .pet-emoji {
+        font-size: 2.5rem;
+    }
+
+    .checkin-stats {
+        gap: 30px;
+    }
+
+    .checkin-stats .stat-value {
+        font-size: 2rem;
+    }
+
+    .stick-body {
+        width: 160px;
+        height: 250px;
+    }
+}
