@@ -99,6 +99,12 @@ class Gallery {
                 // 文件不存在，返回空内容
                 return { content: [], sha: null };
             }
+            if (response.status === 401) {
+                throw new Error('Token 无效或已过期，请重新生成');
+            }
+            if (response.status === 403) {
+                throw new Error('Token 权限不足，请确保勾选了 repo 权限');
+            }
             throw new Error(`GitHub API 错误: ${response.status}`);
         }
 
@@ -144,15 +150,23 @@ class Gallery {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '更新失败');
+                const errorData = await response.json();
+                console.error('GitHub API 返回错误:', errorData);
+
+                if (response.status === 401) {
+                    throw new Error('Token 无效或已过期，请重新生成');
+                }
+                if (response.status === 403) {
+                    throw new Error('Token 权限不足！请确保：\n1. 勾选了 repo 权限\n2. Token 未过期\n3. 是 Classic Token 而非 Fine-grained');
+                }
+                throw new Error(errorData.message || `更新失败 (${response.status})`);
             }
 
             console.log('✅ 照片列表已同步到 GitHub');
             return true;
         } catch (error) {
             console.error('❌ 同步到 GitHub 失败:', error);
-            return false;
+            throw error; // 抛出错误让上层处理
         }
     }
 
@@ -524,23 +538,21 @@ class Gallery {
                 const updatedPhotos = [photo, ...githubPhotos.filter(p => p.src && p.src.startsWith('http'))];
 
                 // 更新 GitHub
-                const success = await this.updateGithubPhotos(updatedPhotos);
+                await this.updateGithubPhotos(updatedPhotos);
 
-                if (success) {
-                    // 更新本地显示
-                    this.defaultPhotos = updatedPhotos;
-                    this.render();
+                // 更新本地显示
+                this.defaultPhotos = updatedPhotos;
+                this.render();
 
-                    hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 上传成功！所有设备可见';
-                    setTimeout(() => hint.remove(), 2000);
+                hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 上传成功！所有设备可见';
+                setTimeout(() => hint.remove(), 2000);
 
-                    resolve(photo);
-                } else {
-                    hint.remove();
-                    reject(new Error('同步到 GitHub 失败，请检查 Token 权限'));
-                }
+                resolve(photo);
             } catch (error) {
                 hint.remove();
+                // 显示详细错误信息
+                const errorMsg = error.message || '同步失败';
+                alert('❌ ' + errorMsg);
                 reject(error);
             }
         });
