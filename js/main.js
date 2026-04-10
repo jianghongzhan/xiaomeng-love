@@ -217,6 +217,7 @@ function initTimeline() {
 function initGallery() {
     const uploadBtn = document.getElementById('uploadBtn');
     const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+    const configBtn = document.getElementById('configBtn');
     const fileInput = document.getElementById('fileInput');
     const videoInput = document.getElementById('videoInput');
     const lightbox = document.getElementById('lightbox');
@@ -227,9 +228,15 @@ function initGallery() {
 
     // 初始化相册
     window.gallery = new Gallery();
+    window.galleryInstance = window.gallery; // 供 HTML 调用
 
     // 上传照片
     uploadBtn?.addEventListener('click', () => fileInput?.click());
+
+    // 云端配置
+    configBtn?.addEventListener('click', () => {
+        window.gallery.showGithubConfig();
+    });
 
     fileInput?.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);

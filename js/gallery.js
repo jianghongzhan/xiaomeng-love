@@ -1,18 +1,28 @@
 /**
  * 相册功能 - 照片上传、展示、管理
- * 使用 imgbb 图床进行图片存储，支持永久保存
+ * 使用 imgbb 图床进行图片存储 + GitHub 同步实现跨设备永久保存
  *
  * 存储方案：
- * 1. 默认照片列表：存储在 GitHub 仓库 data/photos.json，永久保存
- * 2. 本地上传：临时存储在 localStorage，换设备会丢失
- * 3. 上传后复制链接给我，我帮你添加到永久列表
+ * 1. 图片存储：imgbb 图床（永久免费）
+ * 2. 数据同步：GitHub API 自动同步到 photos.json
+ * 3. 所有设备都能看到相同的照片列表
  */
 
-// imgbb 配置 - 请替换为你自己的 API Key
+// imgbb 配置 - 免费图床
 const IMGBB_CONFIG = {
-    // 获取方式：https://api.imgbb.com/ 点击 Get API Key
     apiKey: '8f87602e18258b5ec178cd0ab7c4b450',
     // 免费版限制：每分钟最多 50 次请求，单张图片最大 32MB
+};
+
+// GitHub 配置 - 用于跨设备同步
+const GITHUB_CONFIG = {
+    // 仓库信息
+    owner: 'jianghongzhan',
+    repo: 'xiaomeng-love',
+    branch: 'main',
+    filePath: 'data/photos.json',
+    // GitHub Token 存储在 localStorage，需要用户首次配置
+    tokenKey: 'xiaomeng_github_token',
 };
 
 // 默认照片列表（永久保存在 GitHub）
@@ -25,6 +35,7 @@ class Gallery {
         this.defaultPhotos = []; // 从 GitHub 加载的默认照片
         this.currentIndex = 0;
         this.storageKey = 'xiaomeng_gallery_final';
+        this.githubToken = localStorage.getItem(GITHUB_CONFIG.tokenKey) || '';
 
         this.init();
     }
@@ -37,8 +48,211 @@ class Gallery {
         // 渲染
         this.render();
         console.log('📷 相册初始化完成');
-        console.log('  - 默认照片:', this.defaultPhotos.length, '张');
+        console.log('  - GitHub云照片:', this.defaultPhotos.length, '张');
         console.log('  - 本地照片:', this.photos.length, '张');
+        console.log('  - GitHub同步:', this.githubToken ? '✅ 已配置' : '❌ 未配置Token');
+    }
+
+    // ========== GitHub 同步功能 ==========
+
+    // 获取 GitHub Token
+    getGithubToken() {
+        return localStorage.getItem(GITHUB_CONFIG.tokenKey) || '';
+    }
+
+    // 设置 GitHub Token
+    setGithubToken(token) {
+        if (token) {
+            localStorage.setItem(GITHUB_CONFIG.tokenKey, token);
+            this.githubToken = token;
+            console.log('✅ GitHub Token 已保存');
+        } else {
+            localStorage.removeItem(GITHUB_CONFIG.tokenKey);
+            this.githubToken = '';
+            console.log('🗑️ GitHub Token 已删除');
+        }
+    }
+
+    // 检查是否配置了 GitHub Token
+    isGithubConfigured() {
+        return !!this.getGithubToken();
+    }
+
+    // 从 GitHub 获取当前 photos.json 内容和 SHA
+    async getGithubFile() {
+        const token = this.getGithubToken();
+        if (!token) {
+            throw new Error('请先配置 GitHub Token');
+        }
+
+        const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}?ref=${GITHUB_CONFIG.branch}`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                // 文件不存在，返回空内容
+                return { content: [], sha: null };
+            }
+            throw new Error(`GitHub API 错误: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const content = JSON.parse(atob(data.content));
+        return { content, sha: data.sha };
+    }
+
+    // 更新 GitHub 上的 photos.json
+    async updateGithubPhotos(photos) {
+        const token = this.getGithubToken();
+        if (!token) {
+            console.log('⚠️ 未配置 GitHub Token，跳过同步');
+            return false;
+        }
+
+        try {
+            const { sha } = await this.getGithubFile();
+
+            const content = JSON.stringify(photos, null, 2);
+            const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+            const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+
+            const body = {
+                message: `feat(相册): 更新照片列表 - ${new Date().toLocaleString('zh-CN')}`,
+                content: encodedContent,
+                branch: GITHUB_CONFIG.branch
+            };
+
+            if (sha) {
+                body.sha = sha;
+            }
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || '更新失败');
+            }
+
+            console.log('✅ 照片列表已同步到 GitHub');
+            return true;
+        } catch (error) {
+            console.error('❌ 同步到 GitHub 失败:', error);
+            return false;
+        }
+    }
+
+    // 显示 GitHub Token 配置弹窗
+    showGithubConfig() {
+        const currentToken = this.getGithubToken();
+        const maskedToken = currentToken ? currentToken.substring(0, 8) + '...' : '';
+
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <span class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h3>⚙️ GitHub 同步配置</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
+                    配置 GitHub Token 后，照片将自动同步到云端，所有设备都能看到
+                </p>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">
+                        GitHub Personal Access Token
+                    </label>
+                    <input type="password" id="githubTokenInput"
+                        placeholder="ghp_xxxxxxxxxxxx"
+                        value="${currentToken}"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                </div>
+                <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem;">
+                    <strong>📋 获取 Token 步骤：</strong><br>
+                    1. 访问 <a href="https://github.com/settings/tokens/new" target="_blank" style="color: #ff69b4;">GitHub Token 页面</a><br>
+                    2. 勾选 <code>repo</code> 权限<br>
+                    3. 点击 Generate token 并复制
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn" onclick="window.galleryInstance.saveGithubConfig()">
+                        <i class="fas fa-save"></i> 保存配置
+                    </button>
+                    <button class="submit-btn" style="background: #6c757d;" onclick="window.galleryInstance.testGithubConnection()">
+                        <i class="fas fa-plug"></i> 测试连接
+                    </button>
+                </div>
+                <p style="color: #999; font-size: 0.8rem; margin-top: 15px;">
+                    🔒 Token 只保存在你的浏览器本地，不会上传到任何地方
+                </p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    // 保存 GitHub 配置
+    saveGithubConfig() {
+        const input = document.getElementById('githubTokenInput');
+        const token = input.value.trim();
+
+        if (!token) {
+            alert('请输入 GitHub Token');
+            return;
+        }
+
+        if (!token.startsWith('ghp_')) {
+            alert('Token 格式不正确，应该以 ghp_ 开头');
+            return;
+        }
+
+        this.setGithubToken(token);
+        alert('✅ GitHub Token 已保存！现在上传的照片会自动同步到云端');
+
+        // 关闭弹窗
+        document.querySelector('.modal.active')?.remove();
+    }
+
+    // 测试 GitHub 连接
+    async testGithubConnection() {
+        const input = document.getElementById('githubTokenInput');
+        const token = input.value.trim();
+
+        if (!token) {
+            alert('请先输入 GitHub Token');
+            return;
+        }
+
+        try {
+            const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.ok) {
+                alert('✅ 连接成功！Token 有效');
+            } else {
+                alert('❌ 连接失败：Token 无效或没有权限');
+            }
+        } catch (error) {
+            alert('❌ 连接失败：' + error.message);
+        }
     }
 
     // 从 GitHub 加载默认照片列表
@@ -265,58 +479,66 @@ class Gallery {
                 return;
             }
 
+            // 检查是否配置了 GitHub Token
+            if (!this.isGithubConfigured()) {
+                this.showGithubConfig();
+                reject(new Error('请先配置 GitHub Token 以启用云端同步'));
+                return;
+            }
+
             const hint = this.showUploadHint('正在上传照片到云端...', 'loading');
 
             try {
                 let imageUrl = null;
-                let isPermanent = false;
 
-                // 尝试上传到 imgbb
+                // 上传到 imgbb 图床
                 if (IMGBB_CONFIG.apiKey) {
-                    hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到云端...';
+                    hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到图床...';
                     const uploadResult = await this.uploadToImgbb(file);
 
                     if (uploadResult && uploadResult.url) {
                         imageUrl = uploadResult.url;
-                        isPermanent = true;
-                        hint.innerHTML = '<i class="fas fa-check-circle"></i> 上传成功！照片已永久保存';
-
-                        // 显示照片链接，让用户可以复制
-                        setTimeout(() => {
-                            this.showPhotoLink(imageUrl, file.name);
-                        }, 500);
                     } else {
-                        hint.innerHTML = '<i class="fas fa-exclamation-circle"></i> 云端上传失败，保存到本地...';
+                        hint.remove();
+                        reject(new Error('图床上传失败，请稍后重试'));
+                        return;
                     }
                 }
 
-                // 如果云端上传失败或未配置 API Key，保存到本地
-                if (!imageUrl) {
-                    imageUrl = await this.compressImage(file, 1200, 0.8);
-                    isPermanent = false;
-                    hint.innerHTML = '<i class="fas fa-info-circle"></i> 照片已保存到本地浏览器';
-                }
-
+                // 创建照片对象
                 const photo = {
                     id: Date.now() + Math.random(),
                     src: imageUrl,
                     name: file.name,
                     date: new Date().toLocaleDateString('zh-CN'),
-                    type: 'image',
-                    isPermanent: isPermanent
+                    type: 'image'
                 };
 
-                this.photos.unshift(photo);
-                this.saveToStorage();
-                this.render();
+                // 同步到 GitHub
+                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步到云端...';
 
-                if (isPermanent) {
-                    setTimeout(() => hint.remove(), 1500);
-                } else {
+                // 获取当前 GitHub 上的照片列表
+                const { content: githubPhotos } = await this.getGithubFile();
+
+                // 添加新照片到列表开头
+                const updatedPhotos = [photo, ...githubPhotos.filter(p => p.src && p.src.startsWith('http'))];
+
+                // 更新 GitHub
+                const success = await this.updateGithubPhotos(updatedPhotos);
+
+                if (success) {
+                    // 更新本地显示
+                    this.defaultPhotos = updatedPhotos;
+                    this.render();
+
+                    hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 上传成功！所有设备可见';
                     setTimeout(() => hint.remove(), 2000);
-                }
 
-                resolve(photo);
+                    resolve(photo);
+                } else {
+                    hint.remove();
+                    reject(new Error('同步到 GitHub 失败，请检查 Token 权限'));
+                }
             } catch (error) {
                 hint.remove();
                 reject(error);
@@ -375,32 +597,10 @@ class Gallery {
         }, 2000);
     }
 
-    // 显示照片链接，让用户可以复制
+    // 显示上传成功提示（已废弃，保留兼容）
     showPhotoLink(url, name) {
-        const modal = document.createElement('div');
-        modal.className = 'modal active';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 500px;">
-                <span class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                <h3>📷 照片上传成功</h3>
-                <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
-                    把这个链接发给我，我帮你添加到永久列表
-                </p>
-                <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; word-break: break-all; font-size: 0.85rem;">
-                    ${url}
-                </div>
-                <button class="submit-btn" onclick="navigator.clipboard.writeText('${url}').then(() => alert('已复制到剪贴板！'))">
-                    <i class="fas fa-copy"></i> 复制链接
-                </button>
-                <p style="color: #999; font-size: 0.8rem; margin-top: 15px;">
-                    💡 复制链接后发给我，我帮你永久保存到网站
-                </p>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
+        // 现在自动同步到 GitHub，不再需要手动复制链接
+        console.log('📷 照片已上传:', url);
     }
 
     // 添加视频（视频太大，只能存本地）
@@ -460,12 +660,26 @@ class Gallery {
     }
 
     // 删除媒体
-    deleteMedia(id, type) {
+    async deleteMedia(id, type) {
+        // 先从本地删除
         if (type === 'image') {
             this.photos = this.photos.filter(p => p.id !== id);
         } else {
             this.videos = this.videos.filter(v => v.id !== id);
         }
+
+        // 如果是照片且配置了 GitHub，同步删除
+        if (type === 'image' && this.isGithubConfigured()) {
+            // 从 GitHub 照片列表中删除
+            const updatedPhotos = this.defaultPhotos.filter(p => p.id !== id);
+
+            if (updatedPhotos.length !== this.defaultPhotos.length) {
+                await this.updateGithubPhotos(updatedPhotos);
+                this.defaultPhotos = updatedPhotos;
+                console.log('✅ 已从云端删除照片');
+            }
+        }
+
         this.saveToStorage();
         this.render();
     }
@@ -486,7 +700,7 @@ class Gallery {
                 <div class="gallery-placeholder">
                     <i class="fas fa-images"></i>
                     <p>点击上方按钮上传照片</p>
-                    <p class="placeholder-hint">上传后告诉我链接，我帮你永久保存</p>
+                    <p class="placeholder-hint">配置 GitHub Token 后，照片将自动同步到云端</p>
                 </div>
             `;
             return;
@@ -596,3 +810,13 @@ class Gallery {
 
 // 导出给主脚本使用
 window.Gallery = Gallery;
+
+// 创建全局实例（方便 HTML 按钮调用配置方法）
+document.addEventListener('DOMContentLoaded', () => {
+    // 等待 Gallery 实例创建后绑定到全局
+    setTimeout(() => {
+        if (window.gallery) {
+            window.galleryInstance = window.gallery;
+        }
+    }, 100);
+});

@@ -197,7 +197,7 @@
             <!-- 存储说明 -->
             <div class="storage-info">
                 <i class="fas fa-cloud-upload-alt"></i>
-                <span>照片自动上传到云端永久保存（需配置 API Key）</span>
+                <span>照片自动上传到云端，所有设备可见</span>
             </div>
 
             <div class="gallery-controls">
@@ -206,6 +206,9 @@
                 </button>
                 <button class="upload-btn" id="uploadVideoBtn">
                     <i class="fas fa-video"></i> 上传视频
+                </button>
+                <button class="upload-btn" id="configBtn" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                    <i class="fas fa-cog"></i> 云端配置
                 </button>
                 <input type="file" id="fileInput" accept="image/*" multiple hidden>
                 <input type="file" id="videoInput" accept="video/*" multiple hidden>
@@ -216,7 +219,7 @@
                 <div class="gallery-placeholder">
                     <i class="fas fa-images"></i>
                     <p>点击上方按钮上传照片</p>
-                    <p class="placeholder-hint">支持 JPG、PNG 格式，最大 32MB</p>
+                    <p class="placeholder-hint">配置 GitHub Token 后，照片将自动同步到云端</p>
                 </div>
             </div>
         </div>
