@@ -8,7 +8,7 @@
 // imgbb 配置 - 请替换为你自己的 API Key
 const IMGBB_CONFIG = {
     // 获取方式：https://api.imgbb.com/ 点击 Get API Key
-    apiKey: '', // 在这里填入你的 imgbb API Key
+    apiKey: '8f87602e18258b5ec178cd0ab7c4b450',
     // 免费版限制：每分钟最多 50 次请求，单张图片最大 32MB
 };
 
