@@ -1,6 +1,9 @@
 /**
  * 相册功能 - 照片上传、展示、管理
- * 使用免费图床 sm.ms 进行图片存储，支持永久保存
+ *
+ * 存储方案说明：
+ * 1. 照片链接手动添加：通过 GitHub Issue 上传图片获取永久链接
+ * 2. 本地预览：临时照片存 localStorage（压缩后）
  */
 
 class Gallery {
@@ -8,7 +11,7 @@ class Gallery {
         this.photos = [];
         this.videos = [];
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_v2'; // 新版本存储key
+        this.storageKey = 'xiaomeng_gallery_v3';
 
         this.init();
     }
@@ -16,6 +19,7 @@ class Gallery {
     init() {
         this.loadFromStorage();
         this.render();
+        this.initManualAdd();
     }
 
     // 从 localStorage 加载数据
@@ -42,9 +46,6 @@ class Gallery {
             localStorage.setItem(this.storageKey, JSON.stringify(data));
         } catch (e) {
             console.error('保存相册数据失败:', e);
-            if (e.name === 'QuotaExceededError') {
-                alert('存储空间不足，请删除一些照片后再试');
-            }
         }
     }
 
@@ -56,7 +57,6 @@ class Gallery {
             const img = new Image();
 
             img.onload = () => {
-                // 计算缩放比例
                 let width = img.width;
                 let height = img.height;
 
@@ -67,60 +67,21 @@ class Gallery {
 
                 canvas.width = width;
                 canvas.height = height;
-
-                // 绘制压缩后的图片
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // 转为 base64
-                const compressedData = canvas.toDataURL('image/jpeg', quality);
-                resolve(compressedData);
+                resolve(canvas.toDataURL('image/jpeg', quality));
             };
 
             img.onerror = () => reject(new Error('图片加载失败'));
 
             const reader = new FileReader();
-            reader.onload = (e) => {
-                img.src = e.target.result;
-            };
+            reader.onload = (e) => img.src = e.target.result;
             reader.onerror = () => reject(new Error('读取文件失败'));
             reader.readAsDataURL(file);
         });
     }
 
-    // 上传到免费图床 sm.ms
-    async uploadToImageHost(file) {
-        try {
-            const formData = new FormData();
-            formData.append('smfile', file);
-
-            const response = await fetch('https://sm.ms/api/v2/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                return {
-                    url: result.data.url,
-                    deleteUrl: result.data.delete
-                };
-            } else if (result.code === 'image_repeated') {
-                // 图片已存在，返回已有URL
-                return {
-                    url: result.images,
-                    deleteUrl: null
-                };
-            } else {
-                throw new Error(result.message || '上传失败');
-            }
-        } catch (error) {
-            console.error('图床上传失败:', error);
-            return null;
-        }
-    }
-
-    // 添加照片
+    // 添加照片（本地预览或永久链接）
     async addPhoto(file) {
         return new Promise(async (resolve, reject) => {
             if (!file.type.startsWith('image/')) {
@@ -128,82 +89,168 @@ class Gallery {
                 return;
             }
 
-            // 检查文件大小（限制 10MB）
             if (file.size > 10 * 1024 * 1024) {
                 reject(new Error('图片大小不能超过 10MB'));
                 return;
             }
 
-            // 显示上传提示
-            const uploadHint = document.createElement('div');
-            uploadHint.className = 'upload-hint';
-            uploadHint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传照片...';
-            uploadHint.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(0,0,0,0.8);
-                color: white;
-                padding: 20px 40px;
-                border-radius: 10px;
-                z-index: 9999;
-                font-size: 1.1rem;
-            `;
-            document.body.appendChild(uploadHint);
-
             try {
-                let imageUrl = null;
-                let isCompressed = false;
-
-                // 如果图片小于 5MB，尝试上传到图床
-                if (file.size < 5 * 1024 * 1024) {
-                    const uploadResult = await this.uploadToImageHost(file);
-                    if (uploadResult && uploadResult.url) {
-                        imageUrl = uploadResult.url;
-                    }
-                }
-
-                // 如果图床上传失败，压缩后存储到本地
-                if (!imageUrl) {
-                    try {
-                        imageUrl = await this.compressImage(file, 1200, 0.7);
-                        isCompressed = true;
-                    } catch (e) {
-                        // 压缩失败，直接读取原图
-                        imageUrl = await new Promise((res, rej) => {
-                            const reader = new FileReader();
-                            reader.onload = (e) => res(e.target.result);
-                            reader.onerror = () => rej(new Error('读取文件失败'));
-                            reader.readAsDataURL(file);
-                        });
-                        isCompressed = true;
-                    }
-                }
+                // 压缩图片
+                const compressedSrc = await this.compressImage(file, 1200, 0.8);
 
                 const photo = {
                     id: Date.now() + Math.random(),
-                    src: imageUrl,
+                    src: compressedSrc,
                     name: file.name,
                     date: new Date().toLocaleDateString('zh-CN'),
                     type: 'image',
-                    isCompressed: isCompressed,
-                    isHosted: !isCompressed
+                    isLocal: true
                 };
 
                 this.photos.unshift(photo);
                 this.saveToStorage();
                 this.render();
 
-                uploadHint.innerHTML = '<i class="fas fa-check"></i> 上传成功！';
-                setTimeout(() => uploadHint.remove(), 1500);
+                // 提示用户
+                this.showTip('照片已保存到本地！如需永久保存，请使用"添加永久链接"功能');
 
                 resolve(photo);
             } catch (error) {
-                uploadHint.remove();
                 reject(error);
             }
         });
+    }
+
+    // 添加永久图片链接
+    addPhotoByUrl(url, name = '') {
+        if (!url || !url.startsWith('http')) {
+            alert('请输入有效的图片链接');
+            return false;
+        }
+
+        const photo = {
+            id: Date.now() + Math.random(),
+            src: url,
+            name: name || `照片 ${this.photos.length + 1}`,
+            date: new Date().toLocaleDateString('zh-CN'),
+            type: 'image',
+            isLocal: false,
+            isPermanent: true
+        };
+
+        this.photos.unshift(photo);
+        this.saveToStorage();
+        this.render();
+        this.showTip('永久照片添加成功！');
+
+        return true;
+    }
+
+    // 显示提示
+    showTip(message) {
+        const tip = document.createElement('div');
+        tip.className = 'gallery-tip';
+        tip.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span>${message}</span>
+        `;
+        tip.style.cssText = `
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 105, 180, 0.95);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 30px;
+            z-index: 9999;
+            font-size: 0.95rem;
+            box-shadow: 0 5px 20px rgba(255, 105, 180, 0.4);
+            animation: fadeInUp 0.3s ease;
+        `;
+
+        document.body.appendChild(tip);
+        setTimeout(() => {
+            tip.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => tip.remove(), 300);
+        }, 3000);
+    }
+
+    // 初始化手动添加功能
+    initManualAdd() {
+        // 创建添加链接按钮
+        const controls = document.querySelector('.gallery-controls');
+        if (controls) {
+            const addUrlBtn = document.createElement('button');
+            addUrlBtn.className = 'upload-btn';
+            addUrlBtn.id = 'addUrlBtn';
+            addUrlBtn.innerHTML = '<i class="fas fa-link"></i> 添加永久链接';
+            controls.appendChild(addUrlBtn);
+
+            addUrlBtn.addEventListener('click', () => this.showUrlModal());
+        }
+    }
+
+    // 显示URL输入模态框
+    showUrlModal() {
+        const existingModal = document.getElementById('urlModal');
+        if (existingModal) {
+            existingModal.classList.add('active');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'urlModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 550px;">
+                <span class="modal-close">&times;</span>
+                <h3>添加永久照片链接</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                    💡 如何获取永久链接？<br>
+                    1. 打开 <a href="https://github.com/jianghongzhan/xiaomeng-love/issues" target="_blank" style="color: #FF69B4;">GitHub Issues</a><br>
+                    2. 新建 Issue，拖入图片，复制生成的链接
+                </p>
+                <form id="urlForm">
+                    <div class="form-group">
+                        <label>图片链接</label>
+                        <input type="url" id="photoUrl" placeholder="https://github.com/user-attachments/..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>照片名称（可选）</label>
+                        <input type="text" id="photoName" placeholder="我们的合照">
+                    </div>
+                    <button type="submit" class="submit-btn">添加照片</button>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // 关闭事件
+        modal.querySelector('.modal-close').addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+
+        // 提交事件
+        modal.querySelector('#urlForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const url = modal.querySelector('#photoUrl').value;
+            const name = modal.querySelector('#photoName').value;
+            if (this.addPhotoByUrl(url, name)) {
+                modal.classList.remove('active');
+                modal.querySelector('#photoUrl').value = '';
+                modal.querySelector('#photoName').value = '';
+            }
+        });
+
+        modal.classList.add('active');
     }
 
     // 添加视频（视频太大，只能存本地）
