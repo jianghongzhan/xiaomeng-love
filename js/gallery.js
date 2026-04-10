@@ -272,15 +272,38 @@ class Gallery {
     // 从 GitHub 加载默认照片列表
     async loadDefaultPhotos() {
         try {
-            const response = await fetch(DEFAULT_PHOTOS_URL);
+            // 添加时间戳避免缓存
+            const url = DEFAULT_PHOTOS_URL + '?t=' + Date.now();
+            console.log('📥 正在从 GitHub 加载照片列表...', url);
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
             const data = await response.json();
+            console.log('📦 GitHub 返回数据:', data);
+
             // 过滤掉空的示例照片
             this.defaultPhotos = data.filter(p => p.src && p.src.startsWith('http'));
-            console.log('✅ 从 GitHub 加载了', this.defaultPhotos.length, '张默认照片');
+            console.log('✅ 从 GitHub 加载了', this.defaultPhotos.length, '张云照片');
+
+            // 显示每张照片的信息
+            this.defaultPhotos.forEach((p, i) => {
+                console.log(`  ${i + 1}. ${p.name} - ${p.src.substring(0, 50)}...`);
+            });
         } catch (e) {
-            console.log('📷 未找到默认照片列表');
+            console.error('❌ 加载 GitHub 照片列表失败:', e);
             this.defaultPhotos = [];
         }
+    }
+
+    // 强制刷新照片列表（用户可调用）
+    async refreshPhotos() {
+        console.log('🔄 强制刷新照片列表...');
+        await this.loadDefaultPhotos();
+        this.render();
+        return this.defaultPhotos.length;
     }
 
     // 迁移旧版本数据（从所有可能的 key 迁移）
@@ -699,13 +722,22 @@ class Gallery {
     // 渲染相册
     render() {
         const grid = document.getElementById('galleryGrid');
-        if (!grid) return;
+        if (!grid) {
+            console.error('❌ 找不到 galleryGrid 元素');
+            return;
+        }
 
         // 清空占位符
         grid.innerHTML = '';
 
         // 合并：默认照片（GitHub永久）+ 本地照片 + 视频
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
+
+        console.log('🖼️ 渲染相册:');
+        console.log('  - GitHub云照片:', this.defaultPhotos.length);
+        console.log('  - 本地照片:', this.photos.length);
+        console.log('  - 本地视频:', this.videos.length);
+        console.log('  - 总计:', allMedia.length);
 
         if (allMedia.length === 0) {
             grid.innerHTML = `
@@ -733,12 +765,24 @@ class Gallery {
                     </div>
                 `;
             } else {
-                item.innerHTML = `<img src="${media.src}" alt="${media.name || '照片'}">`;
+                const img = document.createElement('img');
+                img.src = media.src;
+                img.alt = media.name || '照片';
+                img.onerror = () => {
+                    console.error('❌ 图片加载失败:', media.src);
+                    img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ddd" width="100" height="100"/><text x="50%" y="50%" fill="%23999" text-anchor="middle" dy=".3em">加载失败</text></svg>';
+                };
+                img.onload = () => {
+                    console.log('✅ 图片加载成功:', index + 1);
+                };
+                item.appendChild(img);
             }
 
             item.addEventListener('click', () => this.openLightbox(index));
             grid.appendChild(item);
         });
+
+        console.log('✅ 相册渲染完成，共', allMedia.length, '张');
     }
 
     // 打开灯箱
@@ -817,6 +861,38 @@ class Gallery {
         this.videos = [];
         this.saveToStorage();
         this.render();
+    }
+
+    // 清除所有本地数据并重新加载（调试用）
+    async resetAndReload() {
+        console.log('🔄 清除本地数据并重新加载...');
+
+        // 清除所有可能的存储 key
+        const keysToRemove = [
+            this.storageKey,
+            'xiaomeng_gallery',
+            'xiaomeng_gallery_v2',
+            'xiaomeng_gallery_v3',
+            'xiaomeng_gallery_v4',
+            'xiaomeng_gallery_v5',
+            'gallery'
+        ];
+
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            console.log('🗑️ 已删除:', key);
+        });
+
+        // 重置本地数据
+        this.photos = [];
+        this.videos = [];
+
+        // 重新加载
+        await this.loadDefaultPhotos();
+        this.render();
+
+        console.log('✅ 重置完成！云照片数量:', this.defaultPhotos.length);
+        alert('✅ 已清除本地数据，重新加载了 ' + this.defaultPhotos.length + ' 张云照片');
     }
 }
 
