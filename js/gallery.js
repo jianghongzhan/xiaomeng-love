@@ -756,6 +756,9 @@ class Gallery {
 
     // 删除媒体
     async deleteMedia(id, type) {
+        // 显示删除进度
+        const hint = this.showUploadHint('正在删除...', 'loading');
+
         try {
             // 先从本地删除
             if (type === 'image') {
@@ -766,35 +769,50 @@ class Gallery {
 
             // 如果是照片且配置了 GitHub，同步删除
             if (type === 'image' && this.isGithubConfigured()) {
-                // 从 GitHub 照片列表中删除
-                const updatedPhotos = this.defaultPhotos.filter(p => p.id !== id);
+                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在从云端删除...';
+
+                // 从 GitHub 照片列表中删除（比较时统一转为字符串）
+                const idStr = String(id);
+                const updatedPhotos = this.defaultPhotos.filter(p => String(p.id) !== idStr);
+
+                console.log(`🗑️ 尝试删除照片 id: ${idStr}`);
+                console.log(`📷 原始照片数: ${this.defaultPhotos.length}, 删除后: ${updatedPhotos.length}`);
 
                 if (updatedPhotos.length !== this.defaultPhotos.length) {
-                    // 重试机制
+                    // 重试机制（最多 10 次）
                     let success = false;
-                    for (let i = 0; i < 5; i++) {
+                    for (let i = 0; i < 10; i++) {
                         try {
+                            console.log(`📤 删除同步尝试 ${i + 1}/10...`);
                             await this.updateGithubPhotos(updatedPhotos);
                             success = true;
+                            console.log('✅ 云端删除成功');
                             break;
                         } catch (e) {
-                            console.log(`⚠️ 删除同步失败，重试 ${i + 1}/5...`);
-                            await new Promise(r => setTimeout(r, 1000));
+                            console.log(`⚠️ 删除同步失败: ${e.message}`);
+                            await new Promise(r => setTimeout(r, 1500));
                         }
                     }
 
                     if (success) {
                         this.defaultPhotos = updatedPhotos;
-                        console.log('✅ 已从云端删除照片');
+                        hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 已从云端删除';
                     } else {
-                        alert('⚠️ 云端删除失败，但本地已删除');
+                        hint.remove();
+                        alert('❌ 云端删除失败，请刷新页面后重试');
+                        return; // 不继续执行
                     }
+                } else {
+                    console.log('⚠️ 未在云照片中找到该 id');
                 }
             }
 
             this.saveToStorage();
             this.render();
+
+            setTimeout(() => hint.remove(), 1500);
         } catch (error) {
+            hint.remove();
             console.error('❌ 删除失败:', error);
             alert('删除失败: ' + error.message);
         }
