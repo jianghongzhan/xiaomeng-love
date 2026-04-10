@@ -668,21 +668,6 @@ function initMusicPlayer() {
     });
 }
 
-    // 播放结束
-    audio.addEventListener('ended', () => {
-        currentIndex = (currentIndex + 1) % songs.length;
-        loadSong(currentIndex);
-        audio.play();
-    });
-
-    loadSong(currentIndex);
-
-    // 添加提示：用户可以通过控制台添加音乐
-    console.log('%c🎵 如何添加背景音乐', 'font-size: 16px; color: #FF69B4;');
-    console.log('%c方法1: 在 index.html 中添加 <audio> 标签指向本地音乐文件', 'color: #666;');
-    console.log('%c方法2: 使用在线音乐链接，修改 js/main.js 中的 songs 数组', 'color: #666;');
-}
-
 // ========== 返回顶部 ==========
 function initBackToTop() {
     const btn = document.getElementById('backToTop');
