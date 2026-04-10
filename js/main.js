@@ -4,8 +4,8 @@
 
 // ========== 全局配置 ==========
 const CONFIG = {
-    // 在一起的日期（请修改为实际日期）
-    startDate: new Date('2023-02-14'),
+    // 💕 在一起的日期 - 2026年4月10日，我们故事开始的第一天
+    startDate: new Date('2026-04-10'),
     // 音乐列表
     musicList: [
         {
@@ -113,22 +113,12 @@ function initTimeline() {
     const form = document.getElementById('timelineForm');
     const closeBtn = modal?.querySelector('.modal-close');
 
-    // 默认时间线数据
+    // 默认时间线数据 - 记录我们美好的第一天
     const defaultTimeline = [
         {
-            date: '2023-02-14',
-            title: '我们的开始',
-            content: '这一天，我们正式在一起了，开始了这段美好的旅程。'
-        },
-        {
-            date: '2023-03-14',
-            title: '第一个白色情人节',
-            content: '一起度过了第一个白色情人节，甜蜜的回忆。'
-        },
-        {
-            date: '2024-02-14',
-            title: '一周年纪念日',
-            content: '在一起整整一年了，感谢这一年的陪伴与爱护。'
+            date: '2026-04-10',
+            title: '💕 我们在一起的第一天',
+            content: '今天，是我们故事的开始。从这一刻起，我的世界因为你而变得更加美好。小萌，谢谢你来到我的生命里，未来的每一天，我都会好好珍惜你、爱护你。这是我送给你的专属网站，记录我们的点点滴滴。'
         }
     ];
 
@@ -335,17 +325,22 @@ function initMessages() {
     const sendBtn = document.getElementById('sendMessage');
     const list = document.getElementById('messagesList');
 
-    // 默认留言
+    // 默认留言 - 第一天的告白
     const defaultMessages = [
         {
             id: 1,
-            text: '小萌，你是最棒的！每一天都爱你多一点~',
-            time: '2024-01-01 12:00'
+            text: '小萌，从今天开始，你就是我最特别的人。这个网站是专门为你创建的，记录我们在一起的每一个美好瞬间。💕',
+            time: '2026-04-10 12:00'
         },
         {
             id: 2,
-            text: '感谢你出现在我的生命里，让每一天都充满阳光。',
-            time: '2024-01-02 08:30'
+            text: '谢谢你愿意走进我的生活。未来的路，我们一起走。每一天，我都会比昨天更爱你。✨',
+            time: '2026-04-10 12:01'
+        },
+        {
+            id: 3,
+            text: '这里是我们的专属空间，可以上传照片、写下回忆、播放音乐。想对你说的话，都可以留在这里。💝',
+            time: '2026-04-10 12:02'
         }
     ];
 
