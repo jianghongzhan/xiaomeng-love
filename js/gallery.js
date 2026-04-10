@@ -756,27 +756,48 @@ class Gallery {
 
     // 删除媒体
     async deleteMedia(id, type) {
-        // 先从本地删除
-        if (type === 'image') {
-            this.photos = this.photos.filter(p => p.id !== id);
-        } else {
-            this.videos = this.videos.filter(v => v.id !== id);
-        }
-
-        // 如果是照片且配置了 GitHub，同步删除
-        if (type === 'image' && this.isGithubConfigured()) {
-            // 从 GitHub 照片列表中删除
-            const updatedPhotos = this.defaultPhotos.filter(p => p.id !== id);
-
-            if (updatedPhotos.length !== this.defaultPhotos.length) {
-                await this.updateGithubPhotos(updatedPhotos);
-                this.defaultPhotos = updatedPhotos;
-                console.log('✅ 已从云端删除照片');
+        try {
+            // 先从本地删除
+            if (type === 'image') {
+                this.photos = this.photos.filter(p => p.id !== id);
+            } else {
+                this.videos = this.videos.filter(v => v.id !== id);
             }
-        }
 
-        this.saveToStorage();
-        this.render();
+            // 如果是照片且配置了 GitHub，同步删除
+            if (type === 'image' && this.isGithubConfigured()) {
+                // 从 GitHub 照片列表中删除
+                const updatedPhotos = this.defaultPhotos.filter(p => p.id !== id);
+
+                if (updatedPhotos.length !== this.defaultPhotos.length) {
+                    // 重试机制
+                    let success = false;
+                    for (let i = 0; i < 5; i++) {
+                        try {
+                            await this.updateGithubPhotos(updatedPhotos);
+                            success = true;
+                            break;
+                        } catch (e) {
+                            console.log(`⚠️ 删除同步失败，重试 ${i + 1}/5...`);
+                            await new Promise(r => setTimeout(r, 1000));
+                        }
+                    }
+
+                    if (success) {
+                        this.defaultPhotos = updatedPhotos;
+                        console.log('✅ 已从云端删除照片');
+                    } else {
+                        alert('⚠️ 云端删除失败，但本地已删除');
+                    }
+                }
+            }
+
+            this.saveToStorage();
+            this.render();
+        } catch (error) {
+            console.error('❌ 删除失败:', error);
+            alert('删除失败: ' + error.message);
+        }
     }
 
     // 渲染相册
@@ -852,7 +873,8 @@ class Gallery {
         const lightboxVideo = document.getElementById('lightboxVideo');
 
         this.currentIndex = index;
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        // 保持和 render() 一致的顺序
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
         const media = allMedia[index];
 
         if (media.type === 'video') {
@@ -879,14 +901,16 @@ class Gallery {
 
     // 上一张
     prevMedia() {
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        // 保持和 render() 一致的顺序
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
         this.currentIndex = (this.currentIndex - 1 + allMedia.length) % allMedia.length;
         this.updateLightbox();
     }
 
     // 下一张
     nextMedia() {
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        // 保持和 render() 一致的顺序
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
         this.currentIndex = (this.currentIndex + 1) % allMedia.length;
         this.updateLightbox();
     }
@@ -895,7 +919,8 @@ class Gallery {
     updateLightbox() {
         const lightboxImg = document.getElementById('lightboxImg');
         const lightboxVideo = document.getElementById('lightboxVideo');
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        // 保持和 render() 一致的顺序
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
         const media = allMedia[this.currentIndex];
 
         if (media.type === 'video') {
@@ -911,7 +936,8 @@ class Gallery {
 
     // 获取当前媒体
     getCurrentMedia() {
-        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
+        // 保持和 render() 一致的顺序：GitHub云照片 → 本地照片 → 视频
+        const allMedia = [...this.defaultPhotos, ...this.photos, ...this.videos];
         return allMedia[this.currentIndex];
     }
 
