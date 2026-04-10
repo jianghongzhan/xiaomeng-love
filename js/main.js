@@ -448,6 +448,11 @@ function initMusicPlayer() {
             id: 'default_1',
             title: '悦神 (念白版) - KBShinya',
             data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yueshen.mp3'
+        },
+        {
+            id: 'default_2',
+            title: '一个人想着一个人 (林凡氛围感版) - 艾比利',
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yigeren.mp3'
         }
     ];
 
