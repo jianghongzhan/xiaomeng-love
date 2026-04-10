@@ -1,17 +1,23 @@
 /**
  * 相册功能 - 照片上传、展示、管理
+ * 使用 imgbb 图床进行图片存储，支持永久保存
  *
- * 存储方案说明：
- * 1. 照片链接手动添加：通过 GitHub Issue 上传图片获取永久链接
- * 2. 本地预览：临时照片存 localStorage（压缩后）
+ * 配置：在下方 IMGBB_CONFIG 中填入你的 API Key
  */
+
+// imgbb 配置 - 请替换为你自己的 API Key
+const IMGBB_CONFIG = {
+    // 获取方式：https://api.imgbb.com/ 点击 Get API Key
+    apiKey: '', // 在这里填入你的 imgbb API Key
+    // 免费版限制：每分钟最多 50 次请求，单张图片最大 32MB
+};
 
 class Gallery {
     constructor() {
         this.photos = [];
         this.videos = [];
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_v3';
+        this.storageKey = 'xiaomeng_gallery_v4';
 
         this.init();
     }
@@ -19,7 +25,14 @@ class Gallery {
     init() {
         this.loadFromStorage();
         this.render();
-        this.initManualAdd();
+        this.checkApiKey();
+    }
+
+    // 检查 API Key 是否已配置
+    checkApiKey() {
+        if (!IMGBB_CONFIG.apiKey) {
+            console.warn('⚠️ imgbb API Key 未配置，照片将只保存在本地浏览器');
+        }
     }
 
     // 从 localStorage 加载数据
@@ -50,7 +63,7 @@ class Gallery {
     }
 
     // 压缩图片
-    compressImage(file, maxWidth = 1200, quality = 0.8) {
+    compressImage(file, maxWidth = 1920, quality = 0.85) {
         return new Promise((resolve, reject) => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -81,7 +94,86 @@ class Gallery {
         });
     }
 
-    // 添加照片（本地预览或永久链接）
+    // 上传到 imgbb 图床
+    async uploadToImgbb(file) {
+        if (!IMGBB_CONFIG.apiKey) {
+            return null;
+        }
+
+        try {
+            // 压缩图片以减小上传大小
+            const compressedBase64 = await this.compressImage(file, 1920, 0.85);
+            // 移除 data:image/jpeg;base64, 前缀
+            const base64Data = compressedBase64.split(',')[1];
+
+            const formData = new FormData();
+            formData.append('image', base64Data);
+            formData.append('key', IMGBB_CONFIG.apiKey);
+
+            const response = await fetch('https://api.imgbb.com/1/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                return {
+                    url: result.data.url,
+                    thumbnail: result.data.thumb?.url || result.data.url,
+                    deleteUrl: result.data.delete_url,
+                    width: result.data.width,
+                    height: result.data.height
+                };
+            } else {
+                console.error('imgbb 上传失败:', result.error);
+                return null;
+            }
+        } catch (error) {
+            console.error('imgbb 上传出错:', error);
+            return null;
+        }
+    }
+
+    // 显示上传提示
+    showUploadHint(message, type = 'loading') {
+        const existingHint = document.querySelector('.upload-hint');
+        if (existingHint) existingHint.remove();
+
+        const hint = document.createElement('div');
+        hint.className = 'upload-hint';
+
+        const icons = {
+            loading: '<i class="fas fa-spinner fa-spin"></i>',
+            success: '<i class="fas fa-check-circle"></i>',
+            error: '<i class="fas fa-exclamation-circle"></i>'
+        };
+
+        hint.innerHTML = `${icons[type] || icons.loading} ${message}`;
+        hint.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: ${type === 'error' ? 'rgba(255, 71, 87, 0.95)' : 'rgba(0, 0, 0, 0.85)'};
+            color: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            z-index: 9999;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        `;
+
+        document.body.appendChild(hint);
+
+        if (type !== 'loading') {
+            setTimeout(() => hint.remove(), 2000);
+        }
+
+        return hint;
+    }
+
+    // 添加照片
     async addPhoto(file) {
         return new Promise(async (resolve, reject) => {
             if (!file.type.startsWith('image/')) {
@@ -89,39 +181,63 @@ class Gallery {
                 return;
             }
 
-            if (file.size > 10 * 1024 * 1024) {
-                reject(new Error('图片大小不能超过 10MB'));
+            // imgbb 限制 32MB
+            if (file.size > 32 * 1024 * 1024) {
+                reject(new Error('图片大小不能超过 32MB'));
                 return;
             }
 
+            const hint = this.showUploadHint('正在上传照片到云端...', 'loading');
+
             try {
-                // 压缩图片
-                const compressedSrc = await this.compressImage(file, 1200, 0.8);
+                let imageUrl = null;
+                let isPermanent = false;
+
+                // 尝试上传到 imgbb
+                if (IMGBB_CONFIG.apiKey) {
+                    hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到云端...';
+                    const uploadResult = await this.uploadToImgbb(file);
+
+                    if (uploadResult && uploadResult.url) {
+                        imageUrl = uploadResult.url;
+                        isPermanent = true;
+                        hint.innerHTML = '<i class="fas fa-check-circle"></i> 上传成功！照片已永久保存';
+                    } else {
+                        hint.innerHTML = '<i class="fas fa-exclamation-circle"></i> 云端上传失败，保存到本地...';
+                    }
+                }
+
+                // 如果云端上传失败或未配置 API Key，保存到本地
+                if (!imageUrl) {
+                    imageUrl = await this.compressImage(file, 1200, 0.8);
+                    isPermanent = false;
+                    hint.innerHTML = '<i class="fas fa-info-circle"></i> 照片已保存到本地浏览器';
+                }
 
                 const photo = {
                     id: Date.now() + Math.random(),
-                    src: compressedSrc,
+                    src: imageUrl,
                     name: file.name,
                     date: new Date().toLocaleDateString('zh-CN'),
                     type: 'image',
-                    isLocal: true
+                    isPermanent: isPermanent
                 };
 
                 this.photos.unshift(photo);
                 this.saveToStorage();
                 this.render();
 
-                // 提示用户
-                this.showTip('照片已保存到本地！如需永久保存，请使用"添加永久链接"功能');
+                setTimeout(() => hint.remove(), 2000);
 
                 resolve(photo);
             } catch (error) {
+                hint.remove();
                 reject(error);
             }
         });
     }
 
-    // 添加永久图片链接
+    // 添加永久图片链接（手动输入）
     addPhotoByUrl(url, name = '') {
         if (!url || !url.startsWith('http')) {
             alert('请输入有效的图片链接');
@@ -134,7 +250,6 @@ class Gallery {
             name: name || `照片 ${this.photos.length + 1}`,
             date: new Date().toLocaleDateString('zh-CN'),
             type: 'image',
-            isLocal: false,
             isPermanent: true
         };
 
@@ -150,10 +265,7 @@ class Gallery {
     showTip(message) {
         const tip = document.createElement('div');
         tip.className = 'gallery-tip';
-        tip.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            <span>${message}</span>
-        `;
+        tip.innerHTML = `<i class="fas fa-heart"></i> ${message}`;
         tip.style.cssText = `
             position: fixed;
             bottom: 80px;
@@ -173,84 +285,7 @@ class Gallery {
         setTimeout(() => {
             tip.style.animation = 'fadeOut 0.3s ease';
             setTimeout(() => tip.remove(), 300);
-        }, 3000);
-    }
-
-    // 初始化手动添加功能
-    initManualAdd() {
-        // 创建添加链接按钮
-        const controls = document.querySelector('.gallery-controls');
-        if (controls) {
-            const addUrlBtn = document.createElement('button');
-            addUrlBtn.className = 'upload-btn';
-            addUrlBtn.id = 'addUrlBtn';
-            addUrlBtn.innerHTML = '<i class="fas fa-link"></i> 添加永久链接';
-            controls.appendChild(addUrlBtn);
-
-            addUrlBtn.addEventListener('click', () => this.showUrlModal());
-        }
-    }
-
-    // 显示URL输入模态框
-    showUrlModal() {
-        const existingModal = document.getElementById('urlModal');
-        if (existingModal) {
-            existingModal.classList.add('active');
-            return;
-        }
-
-        const modal = document.createElement('div');
-        modal.id = 'urlModal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 550px;">
-                <span class="modal-close">&times;</span>
-                <h3>添加永久照片链接</h3>
-                <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
-                    💡 如何获取永久链接？<br>
-                    1. 打开 <a href="https://github.com/jianghongzhan/xiaomeng-love/issues" target="_blank" style="color: #FF69B4;">GitHub Issues</a><br>
-                    2. 新建 Issue，拖入图片，复制生成的链接
-                </p>
-                <form id="urlForm">
-                    <div class="form-group">
-                        <label>图片链接</label>
-                        <input type="url" id="photoUrl" placeholder="https://github.com/user-attachments/..." required>
-                    </div>
-                    <div class="form-group">
-                        <label>照片名称（可选）</label>
-                        <input type="text" id="photoName" placeholder="我们的合照">
-                    </div>
-                    <button type="submit" class="submit-btn">添加照片</button>
-                </form>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // 关闭事件
-        modal.querySelector('.modal-close').addEventListener('click', () => {
-            modal.classList.remove('active');
-        });
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-            }
-        });
-
-        // 提交事件
-        modal.querySelector('#urlForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const url = modal.querySelector('#photoUrl').value;
-            const name = modal.querySelector('#photoName').value;
-            if (this.addPhotoByUrl(url, name)) {
-                modal.classList.remove('active');
-                modal.querySelector('#photoUrl').value = '';
-                modal.querySelector('#photoName').value = '';
-            }
-        });
-
-        modal.classList.add('active');
+        }, 2000);
     }
 
     // 添加视频（视频太大，只能存本地）
