@@ -460,6 +460,11 @@ function initMusicPlayer() {
             id: 'default_2',
             title: '一个人想着一个人 (林凡氛围感版) - 艾比利',
             data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yigeren.mp3'
+        },
+        {
+            id: 'default_3',
+            title: '小宇 - 蓝心羽',
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/xiaoyu.mp3'
         }
     ];
 
