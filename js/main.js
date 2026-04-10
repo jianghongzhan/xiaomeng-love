@@ -21,6 +21,9 @@ const CONFIG = {
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initLoveCounter();
+    initLoveStats();
+    initConfession();
+    initLoveNotes();
     initTimeline();
     initGallery();
     initChristmasTree();
@@ -28,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMusicPlayer();
     initBackToTop();
     initParticles();
+    initFireworks();
 
     // 初始化圣诞树为散开状态
     setTimeout(() => {
@@ -549,4 +553,329 @@ function formatTime(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ========== 浪漫数据统计 ==========
+function initLoveStats() {
+    const heartbeatsEl = document.getElementById('heartbeats');
+    const thoughtsEl = document.getElementById('thoughts');
+
+    // 每分钟心跳约72次
+    const HEARTBEATS_PER_MINUTE = 72;
+    // 每天想你次数（自定义）
+    const THOUGHTS_PER_DAY = 1000;
+
+    function updateStats() {
+        const now = new Date();
+        const diff = now - CONFIG.startDate;
+
+        // 计算总分钟数
+        const totalMinutes = Math.floor(diff / (1000 * 60));
+        // 心跳次数
+        const heartbeats = totalMinutes * HEARTBEATS_PER_MINUTE;
+        // 想你次数
+        const totalDays = diff / (1000 * 60 * 60 * 24);
+        const thoughts = Math.floor(totalDays * THOUGHTS_PER_DAY);
+
+        if (heartbeatsEl) heartbeatsEl.textContent = formatNumber(heartbeats);
+        if (thoughtsEl) thoughtsEl.textContent = formatNumber(thoughts);
+    }
+
+    function formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toLocaleString();
+    }
+
+    updateStats();
+    setInterval(updateStats, 60000); // 每分钟更新
+}
+
+// ========== 表白墙 ==========
+function initConfession() {
+    const btnYes = document.getElementById('btnYes');
+    const btnNo = document.getElementById('btnNo');
+    const confessionResult = document.getElementById('confessionResult');
+    const confessionQuestion = document.querySelector('.confession-question');
+
+    // 打字机效果文字
+    const typingText = document.querySelector('.typing-text');
+    const confessionMessage = '在这个世界上，有一个人会永远爱你、陪伴你...那个人就是我。';
+    let charIndex = 0;
+
+    function typeWriter() {
+        if (charIndex < confessionMessage.length) {
+            typingText.textContent += confessionMessage.charAt(charIndex);
+            charIndex++;
+            setTimeout(typeWriter, 100);
+        }
+    }
+
+    // 延迟开始打字效果
+    setTimeout(typeWriter, 1000);
+
+    // "不愿意"按钮逃跑效果
+    btnNo?.addEventListener('mouseenter', () => {
+        const maxX = window.innerWidth - btnNo.offsetWidth - 50;
+        const maxY = window.innerHeight - btnNo.offsetHeight - 50;
+        const randomX = Math.random() * maxX;
+        const randomY = Math.random() * maxY;
+
+        btnNo.style.position = 'fixed';
+        btnNo.style.left = randomX + 'px';
+        btnNo.style.top = randomY + 'px';
+        btnNo.style.transition = 'all 0.3s ease';
+    });
+
+    // "我愿意"按钮点击
+    btnYes?.addEventListener('click', () => {
+        confessionQuestion.style.display = 'none';
+        confessionResult.style.display = 'block';
+
+        // 触发大量烟花
+        if (window.fireworksCanvas) {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * (window.innerHeight * 0.6);
+                    window.fireworksCanvas.createFirework(x, y);
+                }, i * 200);
+            }
+        }
+
+        // 保存表白状态
+        localStorage.setItem('xiaomeng_confession', 'accepted');
+    });
+
+    // 检查是否已经表白成功
+    if (localStorage.getItem('xiaomeng_confession') === 'accepted') {
+        confessionQuestion.style.display = 'none';
+        confessionResult.style.display = 'block';
+    }
+}
+
+// ========== 情话生成器 ==========
+function initLoveNotes() {
+    const generateBtn = document.getElementById('generateBtn');
+    const lovenoteText = document.getElementById('lovenoteText');
+    const collectionList = document.getElementById('collectionList');
+    const storageKey = 'xiaomeng_lovenotes';
+
+    // 情话库
+    const loveNotes = [
+        "遇见你是我最美丽的意外，爱上你是我最正确的决定。",
+        "如果爱你是错，那我宁愿一错再错。",
+        "你是我生命中最温柔的等待，也是最长情的告白。",
+        "我愿意用我所有的运气，换取和你在一起的每一天。",
+        "你是我藏在微风里的欢喜，是我不轻易说出口的秘密。",
+        "世间万物皆苦，你明目张胆的偏爱就是救赎。",
+        "你的名字，是我见过最短的情诗。",
+        "往后余生，风雪是你，平淡是你，清贫是你，荣华是你，心底温柔是你。",
+        "我喜欢你，像风走了八万里，不问归期。",
+        "你是我纸短情长的雨季，也是我往后余生的晴空万里。",
+        "想牵你的手，从心动到古稀，从晨光到暮霭。",
+        "你的眼里有星辰大海，而我只想做你眼中最亮的那颗星。",
+        "我愿意变成你喜欢的样子，如果不喜欢，那我就变成你喜欢的一切样子。",
+        "遇见你之后，我才明白，原来心动可以是一种常态。",
+        "你是我穷极一生也做不完的梦。",
+        "我不想要全世界，只想你在我身边。",
+        "你是我心尖上的温柔，也是我眼里的星辰。",
+        "喜欢你是眼见的喜欢，爱你是心里的依赖。",
+        "你就像一颗糖，让我的生活甜甜的。",
+        "你是我漫漫人生路上，最美的风景。",
+        "想把世界上最好的都给你，却发现世界上最好的就是你。",
+        "你的笑容，是我疲惫生活里的温柔梦想。",
+        "我喜欢的样子你都有，你有的样子我都喜欢。",
+        "你是我唯一的偏爱，也是我余生的例外。",
+        "爱你不需要理由，但如果非要一个理由，那就是因为是你。",
+        "想和你一起看日出日落，一起数星星月亮，一起慢慢变老。",
+        "你是我写过最美的情书，也是我收到最好的礼物。",
+        "我爱你，不是因为你是谁，而是因为和你在一起时，我是谁。",
+        "你是我平凡生活里的英雄梦想。",
+        "遇见你，是我这辈子最大的幸运；爱上你，是我这辈子最幸福的事。"
+    ];
+
+    // 生成随机情话
+    function generateNote() {
+        const randomIndex = Math.floor(Math.random() * loveNotes.length);
+        lovenoteText.style.opacity = 0;
+
+        setTimeout(() => {
+            lovenoteText.textContent = loveNotes[randomIndex];
+            lovenoteText.style.opacity = 1;
+        }, 300);
+    }
+
+    // 收藏情话
+    function saveNote(text) {
+        const notes = loadNotes();
+        notes.push({
+            id: Date.now(),
+            text: text
+        });
+        localStorage.setItem(storageKey, JSON.stringify(notes));
+        renderCollection();
+    }
+
+    // 加载收藏的情话
+    function loadNotes() {
+        try {
+            const data = localStorage.getItem(storageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    // 渲染收藏列表
+    function renderCollection() {
+        const notes = loadNotes();
+        if (notes.length === 0) {
+            collectionList.innerHTML = '<p class="empty-hint">点击情话卡片右上角可收藏</p>';
+            return;
+        }
+
+        collectionList.innerHTML = notes.map(note => `
+            <div class="collection-item">
+                <p>${note.text}</p>
+                <button onclick="deleteNote(${note.id})"><i class="fas fa-times"></i></button>
+            </div>
+        `).join('');
+    }
+
+    // 删除收藏
+    window.deleteNote = function(id) {
+        const notes = loadNotes().filter(n => n.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(notes));
+        renderCollection();
+    };
+
+    // 双击收藏
+    lovenoteText?.addEventListener('dblclick', () => {
+        saveNote(lovenoteText.textContent);
+        alert('已收藏这句情话！💕');
+    });
+
+    // 点击生成
+    generateBtn?.addEventListener('click', generateNote);
+
+    // 初始渲染
+    renderCollection();
+}
+
+// ========== 烟花特效 ==========
+function initFireworks() {
+    const canvas = document.getElementById('fireworks-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+
+    // 设置画布大小
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // 烟花粒子类
+    class Particle {
+        constructor(x, y, color, velocity) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.velocity = velocity;
+            this.alpha = 1;
+            this.decay = Math.random() * 0.015 + 0.015;
+            this.gravity = 0.05;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.alpha;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        update() {
+            this.velocity.x *= 0.99;
+            this.velocity.y *= 0.99;
+            this.velocity.y += this.gravity;
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            this.alpha -= this.decay;
+        }
+    }
+
+    // 烟花类
+    class Firework {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.particles = [];
+            this.colors = [
+                '#FF69B4', '#FF1493', '#FFD700', '#FF6B6B',
+                '#87CEEB', '#98FB98', '#DDA0DD', '#F0E68C'
+            ];
+
+            const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+            const particleCount = 100;
+
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (Math.PI * 2 / particleCount) * i;
+                const speed = Math.random() * 6 + 2;
+                this.particles.push(new Particle(x, y, color, {
+                    x: Math.cos(angle) * speed,
+                    y: Math.sin(angle) * speed
+                }));
+            }
+        }
+
+        draw() {
+            this.particles.forEach(p => {
+                if (p.alpha > 0) {
+                    p.draw();
+                    p.update();
+                }
+            });
+        }
+
+        isDead() {
+            return this.particles.every(p => p.alpha <= 0);
+        }
+    }
+
+    // 烟花数组
+    let fireworks = [];
+
+    // 动画循环
+    function animate() {
+        ctx.fillStyle = 'rgba(26, 26, 46, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        fireworks = fireworks.filter(f => !f.isDead());
+        fireworks.forEach(f => f.draw());
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    // 创建烟花
+    function createFirework(x, y) {
+        fireworks.push(new Firework(x, y));
+    }
+
+    // 点击创建烟花
+    canvas.addEventListener('click', (e) => {
+        createFirework(e.clientX, e.clientY);
+    });
+
+    // 导出创建烟花函数
+    window.fireworksCanvas = { createFirework };
 }

@@ -14,9 +14,10 @@
         <div class="nav-brand">💕 小萌的空间</div>
         <div class="nav-links">
             <a href="#home" class="nav-link active">首页</a>
+            <a href="#confession" class="nav-link">表白墙</a>
+            <a href="#lovenotes" class="nav-link">情话机</a>
             <a href="#timeline" class="nav-link">时光轴</a>
             <a href="#gallery" class="nav-link">相册</a>
-            <a href="#tree" class="nav-link">圣诞树</a>
             <a href="#messages" class="nav-link">留言板</a>
         </div>
         <div class="menu-toggle">
@@ -59,9 +60,88 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 浪漫数据统计 -->
+            <div class="love-stats">
+                <div class="stat-item">
+                    <i class="fas fa-heartbeat"></i>
+                    <span id="heartbeats" class="stat-number">0</span>
+                    <span class="stat-label">次心跳</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-moon"></i>
+                    <span id="thoughts" class="stat-number">0</span>
+                    <span class="stat-label">次想你</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-star"></i>
+                    <span id="stars" class="stat-number">∞</span>
+                    <span class="stat-label">颗星星给你</span>
+                </div>
+            </div>
             <div class="scroll-hint">
                 <i class="fas fa-chevron-down"></i>
                 <span>向下滑动探索</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 表白墙 - 互动表白 -->
+    <section id="confession" class="confession-section">
+        <canvas id="fireworks-canvas"></canvas>
+        <div class="section-container">
+            <h2 class="section-title">💌 表白墙</h2>
+            <p class="section-subtitle">点击屏幕任意位置绽放烟花</p>
+
+            <div class="confession-content">
+                <div class="confession-text" id="confessionText">
+                    <span class="typing-text"></span>
+                    <span class="cursor">|</span>
+                </div>
+
+                <div class="confession-question">
+                    <h3>小萌，愿意做我女朋友吗？</h3>
+                    <div class="confession-buttons">
+                        <button class="btn-yes" id="btnYes">
+                            <i class="fas fa-heart"></i> 我愿意 💕
+                        </button>
+                        <button class="btn-no" id="btnNo">
+                            让我想想...
+                        </button>
+                    </div>
+                </div>
+
+                <div class="confession-result" id="confessionResult" style="display: none;">
+                    <div class="result-hearts">💕💕💕</div>
+                    <h3>太棒了！我会永远爱你！</h3>
+                    <p>从今天起，你就是我最特别的人</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 情话生成器 -->
+    <section id="lovenotes" class="lovenotes-section">
+        <div class="section-container">
+            <h2 class="section-title">💝 情话生成器</h2>
+            <p class="section-subtitle">每一句情话，都是我的心声</p>
+
+            <div class="lovenote-card">
+                <div class="lovenote-content">
+                    <i class="fas fa-quote-left"></i>
+                    <p id="lovenoteText">点击按钮，生成专属情话</p>
+                    <i class="fas fa-quote-right"></i>
+                </div>
+                <button class="generate-btn" id="generateBtn">
+                    <i class="fas fa-magic"></i> 生成新情话
+                </button>
+            </div>
+
+            <div class="lovenote-collection">
+                <h4>📝 我的情话收藏</h4>
+                <div class="collection-list" id="collectionList">
+                    <p class="empty-hint">点击情话卡片右上角可收藏</p>
+                </div>
             </div>
         </div>
     </section>
