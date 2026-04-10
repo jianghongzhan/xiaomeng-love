@@ -17,15 +17,43 @@ class Gallery {
         this.photos = [];
         this.videos = [];
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_v4';
+        this.storageKey = 'xiaomeng_gallery_v5'; // 再次更新版本号
 
         this.init();
     }
 
     init() {
+        this.migrateOldData(); // 迁移旧数据
         this.loadFromStorage();
         this.render();
-        this.checkApiKey();
+        console.log('📷 相册初始化完成，当前照片数量:', this.photos.length);
+    }
+
+    // 迁移旧版本数据
+    migrateOldData() {
+        const oldKeys = [
+            'xiaomeng_gallery',
+            'xiaomeng_gallery_v2',
+            'xiaomeng_gallery_v3',
+            'xiaomeng_gallery_v4'
+        ];
+
+        for (const oldKey of oldKeys) {
+            try {
+                const oldData = localStorage.getItem(oldKey);
+                if (oldData) {
+                    const parsed = JSON.parse(oldData);
+                    if (parsed.photos && parsed.photos.length > 0) {
+                        // 找到旧数据，迁移到新key
+                        console.log('📦 发现旧数据，正在迁移...', parsed.photos.length, '张照片');
+                        localStorage.setItem(this.storageKey, JSON.stringify(parsed));
+                        // 不删除旧数据，以防万一
+                    }
+                }
+            } catch (e) {
+                console.log('迁移数据时出错:', e);
+            }
+        }
     }
 
     // 检查 API Key 是否已配置
@@ -43,6 +71,7 @@ class Gallery {
                 const parsed = JSON.parse(data);
                 this.photos = parsed.photos || [];
                 this.videos = parsed.videos || [];
+                console.log('✅ 从本地存储加载了', this.photos.length, '张照片');
             }
         } catch (e) {
             console.error('加载相册数据失败:', e);
@@ -54,11 +83,21 @@ class Gallery {
         try {
             const data = {
                 photos: this.photos,
-                videos: this.videos
+                videos: this.videos,
+                lastUpdate: new Date().toISOString()
             };
             localStorage.setItem(this.storageKey, JSON.stringify(data));
+            console.log('💾 保存成功！当前照片数量:', this.photos.length);
+
+            // 验证保存是否成功
+            const saved = localStorage.getItem(this.storageKey);
+            if (saved) {
+                const verify = JSON.parse(saved);
+                console.log('✅ 验证成功，已保存', verify.photos?.length || 0, '张照片');
+            }
         } catch (e) {
-            console.error('保存相册数据失败:', e);
+            console.error('❌ 保存相册数据失败:', e);
+            alert('保存失败：' + e.message);
         }
     }
 
