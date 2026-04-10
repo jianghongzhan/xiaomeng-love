@@ -17,7 +17,7 @@ class Gallery {
         this.photos = [];
         this.videos = [];
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_v5'; // 再次更新版本号
+        this.storageKey = 'xiaomeng_gallery_final'; // 最终版本，不再更改
 
         this.init();
     }
@@ -29,37 +29,48 @@ class Gallery {
         console.log('📷 相册初始化完成，当前照片数量:', this.photos.length);
     }
 
-    // 迁移旧版本数据
+    // 迁移旧版本数据（从所有可能的 key 迁移）
     migrateOldData() {
-        const oldKeys = [
+        // 所有可能的旧 key
+        const allPossibleKeys = [
             'xiaomeng_gallery',
             'xiaomeng_gallery_v2',
             'xiaomeng_gallery_v3',
-            'xiaomeng_gallery_v4'
+            'xiaomeng_gallery_v4',
+            'xiaomeng_gallery_v5',
+            'xiaomeng_timeline', // 防止写错
+            'gallery'
         ];
 
-        for (const oldKey of oldKeys) {
+        let foundData = null;
+        let foundKey = null;
+
+        // 查找包含数据的 key
+        for (const key of allPossibleKeys) {
             try {
-                const oldData = localStorage.getItem(oldKey);
-                if (oldData) {
-                    const parsed = JSON.parse(oldData);
+                const data = localStorage.getItem(key);
+                if (data) {
+                    const parsed = JSON.parse(data);
                     if (parsed.photos && parsed.photos.length > 0) {
-                        // 找到旧数据，迁移到新key
-                        console.log('📦 发现旧数据，正在迁移...', parsed.photos.length, '张照片');
-                        localStorage.setItem(this.storageKey, JSON.stringify(parsed));
-                        // 不删除旧数据，以防万一
+                        foundData = parsed;
+                        foundKey = key;
+                        console.log('📦 在', key, '发现', parsed.photos.length, '张照片');
+                        break;
                     }
                 }
             } catch (e) {
-                console.log('迁移数据时出错:', e);
+                // 忽略解析错误
             }
         }
-    }
 
-    // 检查 API Key 是否已配置
-    checkApiKey() {
-        if (!IMGBB_CONFIG.apiKey) {
-            console.warn('⚠️ imgbb API Key 未配置，照片将只保存在本地浏览器');
+        // 如果找到数据，保存到最终 key
+        if (foundData) {
+            try {
+                localStorage.setItem(this.storageKey, JSON.stringify(foundData));
+                console.log('✅ 数据已迁移到最终存储位置');
+            } catch (e) {
+                console.error('迁移数据失败:', e);
+            }
         }
     }
 
@@ -72,6 +83,8 @@ class Gallery {
                 this.photos = parsed.photos || [];
                 this.videos = parsed.videos || [];
                 console.log('✅ 从本地存储加载了', this.photos.length, '张照片');
+            } else {
+                console.log('📷 本地存储中没有照片数据');
             }
         } catch (e) {
             console.error('加载相册数据失败:', e);
