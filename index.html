@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给小萌的浪漫空间 💕</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-brand">💕 小萌的空间</div>
+        <div class="nav-links">
+            <a href="#home" class="nav-link active">首页</a>
+            <a href="#timeline" class="nav-link">时光轴</a>
+            <a href="#gallery" class="nav-link">相册</a>
+            <a href="#tree" class="nav-link">圣诞树</a>
+            <a href="#messages" class="nav-link">留言板</a>
+        </div>
+        <div class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </div>
+    </nav>
+
+    <!-- 首页 Hero -->
+    <section id="home" class="hero-section">
+        <canvas id="particles-canvas"></canvas>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="title-char">致</span>
+                <span class="title-char">我</span>
+                <span class="title-char">最</span>
+                <span class="title-char">爱</span>
+                <span class="title-char">的</span>
+                <span class="title-char">小</span>
+                <span class="title-char">萌</span>
+            </h1>
+            <p class="hero-subtitle">每一天，都因你而美好</p>
+            <div class="love-counter">
+                <div class="counter-label">我们在一起已经</div>
+                <div class="counter-numbers">
+                    <div class="counter-item">
+                        <span id="days" class="counter-number">0</span>
+                        <span class="counter-unit">天</span>
+                    </div>
+                    <div class="counter-item">
+                        <span id="hours" class="counter-number">0</span>
+                        <span class="counter-unit">时</span>
+                    </div>
+                    <div class="counter-item">
+                        <span id="minutes" class="counter-number">0</span>
+                        <span class="counter-unit">分</span>
+                    </div>
+                    <div class="counter-item">
+                        <span id="seconds" class="counter-number">0</span>
+                        <span class="counter-unit">秒</span>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-hint">
+                <i class="fas fa-chevron-down"></i>
+                <span>向下滑动探索</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 时间轴 -->
+    <section id="timeline" class="timeline-section">
+        <div class="section-container">
+            <h2 class="section-title">我们的时光轴</h2>
+            <p class="section-subtitle">记录每一个珍贵瞬间</p>
+
+            <div class="timeline">
+                <div class="timeline-line"></div>
+                <div id="timeline-items">
+                    <!-- 时间线项目会通过 JS 动态添加 -->
+                </div>
+            </div>
+
+            <button class="add-timeline-btn" id="addTimelineBtn">
+                <i class="fas fa-plus"></i> 添加回忆
+            </button>
+        </div>
+    </section>
+
+    <!-- 时间线添加模态框 -->
+    <div class="modal" id="timelineModal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h3>添加新的回忆</h3>
+            <form id="timelineForm">
+                <div class="form-group">
+                    <label for="timelineDate">日期</label>
+                    <input type="date" id="timelineDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="timelineTitle">标题</label>
+                    <input type="text" id="timelineTitle" placeholder="例如：第一次见面" required>
+                </div>
+                <div class="form-group">
+                    <label for="timelineContent">内容</label>
+                    <textarea id="timelineContent" placeholder="描述这个美好时刻..." rows="3" required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">保存回忆</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 相册 -->
+    <section id="gallery" class="gallery-section">
+        <div class="section-container">
+            <h2 class="section-title">我们的相册</h2>
+            <p class="section-subtitle">记录美好瞬间</p>
+
+            <div class="gallery-controls">
+                <button class="upload-btn" id="uploadBtn">
+                    <i class="fas fa-camera"></i> 上传照片
+                </button>
+                <button class="upload-btn" id="uploadVideoBtn">
+                    <i class="fas fa-video"></i> 上传视频
+                </button>
+                <input type="file" id="fileInput" accept="image/*" multiple hidden>
+                <input type="file" id="videoInput" accept="video/*" multiple hidden>
+            </div>
+
+            <div class="gallery-grid" id="galleryGrid">
+                <!-- 照片会通过 JS 动态添加 -->
+                <div class="gallery-placeholder">
+                    <i class="fas fa-images"></i>
+                    <p>点击上方按钮上传照片</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 照片查看模态框 -->
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <button class="lightbox-nav lightbox-prev"><i class="fas fa-chevron-left"></i></button>
+        <button class="lightbox-nav lightbox-next"><i class="fas fa-chevron-right"></i></button>
+        <img id="lightboxImg" src="" alt="">
+        <video id="lightboxVideo" controls style="display: none;"></video>
+        <button class="delete-btn" id="deleteMediaBtn"><i class="fas fa-trash"></i></button>
+    </div>
+
+    <!-- 圣诞树 -->
+    <section id="tree" class="tree-section">
+        <div class="section-container">
+            <h2 class="section-title">魔法圣诞树</h2>
+            <p class="section-subtitle">点击屏幕，粒子会聚合成圣诞树</p>
+
+            <div class="tree-controls">
+                <button class="tree-btn" id="assembleBtn">
+                    <i class="fas fa-tree"></i> 聚合
+                </button>
+                <button class="tree-btn" id="disperseBtn">
+                    <i class="fas fa-star"></i> 散开
+                </button>
+                <button class="tree-btn" id="heartBtn">
+                    <i class="fas fa-heart"></i> 爱心
+                </button>
+            </div>
+
+            <canvas id="tree-canvas"></canvas>
+        </div>
+    </section>
+
+    <!-- 留言板 -->
+    <section id="messages" class="messages-section">
+        <div class="section-container">
+            <h2 class="section-title">留言板</h2>
+            <p class="section-subtitle">写下你想对小萌说的话</p>
+
+            <div class="message-form">
+                <textarea id="messageInput" placeholder="写下你的心里话..." rows="3"></textarea>
+                <button class="send-btn" id="sendMessage">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+
+            <div class="messages-list" id="messagesList">
+                <!-- 留言会通过 JS 动态添加 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 音乐播放器 -->
+    <div class="music-player" id="musicPlayer">
+        <button class="music-toggle" id="musicToggle">
+            <i class="fas fa-music"></i>
+        </button>
+        <div class="music-info">
+            <span class="music-title">温柔旋律</span>
+            <div class="music-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        <div class="music-controls">
+            <button class="music-btn" id="prevBtn"><i class="fas fa-step-backward"></i></button>
+            <button class="music-btn play-btn" id="playBtn"><i class="fas fa-play"></i></button>
+            <button class="music-btn" id="nextBtn"><i class="fas fa-step-forward"></i></button>
+        </div>
+    </div>
+
+    <!-- 返回顶部 -->
+    <button class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>💕 用爱制作，献给最特别的小萌 💕</p>
+            <p class="footer-year">© 2024 - 永远爱你</p>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="js/particles.js"></script>
+    <script src="js/tree.js"></script>
+    <script src="js/gallery.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
