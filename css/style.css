@@ -466,6 +466,35 @@ body {
     color: var(--light-pink);
 }
 
+.placeholder-hint {
+    font-size: 0.85rem;
+    margin-top: 10px;
+    opacity: 0.7;
+}
+
+/* 存储说明 */
+.storage-info {
+    text-align: center;
+    padding: 12px 20px;
+    background: rgba(255, 105, 180, 0.1);
+    border-radius: 30px;
+    margin-bottom: 30px;
+    display: inline-block;
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+.storage-info i {
+    color: var(--primary-pink);
+    margin-right: 8px;
+}
+
+.storage-info span {
+    font-size: 0.9rem;
+    color: var(--dark);
+    opacity: 0.8;
+}
+
 .gallery-item {
     position: relative;
     border-radius: 15px;
