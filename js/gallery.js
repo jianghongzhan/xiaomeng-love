@@ -29,6 +29,8 @@ class Gallery {
         this.currentIndex = 0;
         this.storageKey = 'xiaomeng_gallery_final';
         this.githubToken = localStorage.getItem(GITHUB_CONFIG.tokenKey) || '';
+        this.uploadQueue = []; // 上传队列
+        this.isUploading = false; // 是否正在上传
 
         this.init();
     }
@@ -521,73 +523,117 @@ class Gallery {
         return hint;
     }
 
-    // 添加照片
+    // 添加照片（使用队列避免并发冲突）
     async addPhoto(file) {
-        return new Promise(async (resolve, reject) => {
-            if (!file.type.startsWith('image/')) {
-                reject(new Error('请选择图片文件'));
-                return;
-            }
-
-            // imgbb 限制 32MB
-            if (file.size > 32 * 1024 * 1024) {
-                reject(new Error('图片大小不能超过 32MB'));
-                return;
-            }
-
-            // 检查是否配置了 GitHub Token
-            if (!this.isGithubConfigured()) {
-                this.showGithubConfig();
-                reject(new Error('请先配置 GitHub Token 以启用云端同步'));
-                return;
-            }
-
-            const hint = this.showUploadHint('正在上传照片...', 'loading');
-
-            try {
-                // 上传图片到 GitHub 仓库
-                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到 GitHub...';
-                const uploadResult = await this.uploadToGithub(file);
-
-                const imageUrl = uploadResult.url;
-
-                // 创建照片对象
-                const photo = {
-                    id: Date.now() + Math.random(),
-                    src: imageUrl,
-                    name: file.name,
-                    date: new Date().toLocaleDateString('zh-CN'),
-                    type: 'image'
-                };
-
-                // 更新照片列表
-                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步照片列表...';
-
-                // 获取当前 GitHub 上的照片列表
-                const { content: githubPhotos } = await this.getGithubFile();
-
-                // 添加新照片到列表开头
-                const updatedPhotos = [photo, ...githubPhotos.filter(p => p.src && p.src.startsWith('http'))];
-
-                // 更新 photos.json
-                await this.updateGithubPhotos(updatedPhotos);
-
-                // 更新本地显示
-                this.defaultPhotos = updatedPhotos;
-                this.render();
-
-                hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 上传成功！所有设备可见';
-                setTimeout(() => hint.remove(), 2000);
-
-                resolve(photo);
-            } catch (error) {
-                hint.remove();
-                // 显示详细错误信息
-                const errorMsg = error.message || '上传失败';
-                alert('❌ ' + errorMsg);
-                reject(error);
-            }
+        return new Promise((resolve, reject) => {
+            // 加入队列
+            this.uploadQueue.push({ file, resolve, reject });
+            this.processQueue();
         });
+    }
+
+    // 处理上传队列
+    async processQueue() {
+        // 如果正在上传或队列为空，直接返回
+        if (this.isUploading || this.uploadQueue.length === 0) {
+            return;
+        }
+
+        this.isUploading = true;
+        const { file, resolve, reject } = this.uploadQueue.shift();
+
+        try {
+            const result = await this._doUploadPhoto(file);
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        } finally {
+            this.isUploading = false;
+            // 处理下一个
+            if (this.uploadQueue.length > 0) {
+                // 延迟 500ms 再处理下一个，避免冲突
+                setTimeout(() => this.processQueue(), 500);
+            }
+        }
+    }
+
+    // 实际执行上传
+    async _doUploadPhoto(file) {
+        if (!file.type.startsWith('image/')) {
+            throw new Error('请选择图片文件');
+        }
+
+        // imgbb 限制 32MB
+        if (file.size > 32 * 1024 * 1024) {
+            throw new Error('图片大小不能超过 32MB');
+        }
+
+        // 检查是否配置了 GitHub Token
+        if (!this.isGithubConfigured()) {
+            this.showGithubConfig();
+            throw new Error('请先配置 GitHub Token 以启用云端同步');
+        }
+
+        const hint = this.showUploadHint('正在上传照片...', 'loading');
+
+        try {
+            // 上传图片到 GitHub 仓库
+            hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到 GitHub...';
+            const uploadResult = await this.uploadToGithub(file);
+
+            const imageUrl = uploadResult.url;
+
+            // 创建照片对象
+            const photo = {
+                id: Date.now() + Math.random(),
+                src: imageUrl,
+                name: file.name,
+                date: new Date().toLocaleDateString('zh-CN'),
+                type: 'image'
+            };
+
+            // 更新照片列表
+            hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步照片列表...';
+
+            // 获取当前 GitHub 上的照片列表
+            const { content: githubPhotos } = await this.getGithubFile();
+
+            // 添加新照片到列表开头
+            const updatedPhotos = [photo, ...githubPhotos.filter(p => p.src && p.src.startsWith('http'))];
+
+            // 更新 photos.json（最多重试 5 次）
+            let lastError = null;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    await this.updateGithubPhotos(updatedPhotos);
+                    lastError = null;
+                    break;
+                } catch (e) {
+                    lastError = e;
+                    console.log(`⚠️ 第 ${i + 1} 次同步失败，重试中...`);
+                    await new Promise(r => setTimeout(r, 1000)); // 等待 1 秒
+                }
+            }
+
+            if (lastError) {
+                throw lastError;
+            }
+
+            // 更新本地显示
+            this.defaultPhotos = updatedPhotos;
+            this.render();
+
+            hint.innerHTML = '<i class="fas fa-check-circle"></i> ✅ 上传成功！所有设备可见';
+            setTimeout(() => hint.remove(), 2000);
+
+            return photo;
+        } catch (error) {
+            hint.remove();
+            // 显示详细错误信息
+            const errorMsg = error.message || '上传失败';
+            alert('❌ ' + errorMsg);
+            throw error;
+        }
     }
 
     // 添加永久图片链接（手动输入）

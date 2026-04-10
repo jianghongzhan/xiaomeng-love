@@ -681,14 +681,24 @@ function initMusicPlayer() {
     initDB().then(async () => {
         const localSongs = await loadSongs();
         console.log('🎵 本地存储了', localSongs.length, '首歌曲');
+        console.log('🎵 GitHub 默认音乐:', defaultSongs.length, '首');
 
-        // 如果有本地音乐，使用本地的；否则使用默认音乐
-        if (localSongs.length > 0) {
-            songs = localSongs;
-        } else {
-            songs = defaultSongs;
-            console.log('🎵 使用默认音乐列表');
-        }
+        // 合并：默认音乐 + 本地上传的音乐
+        // 使用 Map 去重（以 id 为 key）
+        const songMap = new Map();
+
+        // 先添加默认音乐
+        defaultSongs.forEach(song => {
+            songMap.set(song.id, song);
+        });
+
+        // 再添加本地音乐（会覆盖相同 id 的）
+        localSongs.forEach(song => {
+            songMap.set(song.id, song);
+        });
+
+        songs = Array.from(songMap.values());
+        console.log('🎵 总共', songs.length, '首歌曲可用');
 
         if (songs.length > 0) {
             loadSong(0);
