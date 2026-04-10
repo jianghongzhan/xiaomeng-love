@@ -18,7 +18,7 @@ const CONFIG = {
 };
 
 // ========== DOM 加载完成后初始化 ==========
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initLoveCounter();
     initLoveStats();
@@ -44,6 +44,25 @@ document.addEventListener('DOMContentLoaded', () => {
             window.christmasTree.setTarget('disperse');
         }
     }, 100);
+
+    // 云端数据同步
+    if (window.cloudSync?.isConfigured()) {
+        console.log('🔄 检测到 GitHub Token，开始同步云端数据...');
+        try {
+            await window.cloudSync.syncAll();
+            // 同步完成后重新渲染各模块
+            setTimeout(() => {
+                // 重新加载留言
+                const messagesList = document.getElementById('messagesList');
+                if (messagesList && window.initMessages) {
+                    // 触发重新渲染
+                }
+                console.log('✅ 云端数据同步完成，请刷新页面查看最新数据');
+            }, 500);
+        } catch (e) {
+            console.error('云端同步失败:', e);
+        }
+    }
 });
 
 // ========== 导航功能 ==========
@@ -371,9 +390,13 @@ function initMessages() {
         }
     }
 
-    // 保存数据
-    function saveData(data) {
+    // 保存数据（同时同步到云端）
+    async function saveData(data) {
         localStorage.setItem(storageKey, JSON.stringify(data));
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('messages', data);
+        }
     }
 
     // 渲染留言
@@ -398,17 +421,17 @@ function initMessages() {
 
         // 绑定删除事件
         list.querySelectorAll('.message-delete').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const id = parseInt(btn.dataset.id);
                 const data = loadData().filter(m => m.id !== id);
-                saveData(data);
+                await saveData(data);
                 render();
             });
         });
     }
 
     // 发送留言
-    function sendMessage() {
+    async function sendMessage() {
         if (!input || !input.value.trim()) return;
 
         const data = loadData();
@@ -417,7 +440,7 @@ function initMessages() {
             text: input.value.trim(),
             time: new Date().toLocaleString('zh-CN')
         });
-        saveData(data);
+        await saveData(data);
         render();
         input.value = '';
     }
@@ -1235,7 +1258,7 @@ function initWishes() {
     }
 
     // 许愿
-    wishBtn.addEventListener('click', () => {
+    wishBtn.addEventListener('click', async () => {
         const wish = wishInput.value.trim();
         if (!wish) {
             alert('请输入你的愿望~');
@@ -1245,10 +1268,16 @@ function initWishes() {
         // 保存愿望
         const wishes = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
         wishes.push({
+            id: Date.now(),
             text: wish,
             time: new Date().toLocaleString('zh-CN')
         });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
+
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('wishes', wishes);
+        }
 
         // 飘走动画
         createFlyingStar(wish);
@@ -1288,9 +1317,13 @@ function initCheckin() {
         return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     }
 
-    // 保存签到数据
-    function saveData(data) {
+    // 保存签到数据（同时同步到云端）
+    async function saveData(data) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('checkin', data);
+        }
     }
 
     // 计算连续签到天数
@@ -1378,7 +1411,7 @@ function initCheckin() {
     }
 
     // 签到
-    checkinBtn.addEventListener('click', () => {
+    checkinBtn.addEventListener('click', async () => {
         const data = loadData();
         const today = getTodayStr();
 
@@ -1388,7 +1421,7 @@ function initCheckin() {
 
         if (!data.dates.includes(today)) {
             data.dates.push(today);
-            saveData(data);
+            await saveData(data);
             updateDisplay();
 
             // 庆祝动画
