@@ -1,27 +1,20 @@
 /**
  * 相册功能 - 照片上传、展示、管理
- * 使用 imgbb 图床进行图片存储 + GitHub 同步实现跨设备永久保存
+ * 图片直接存储到 GitHub 仓库，国内外都能访问
  *
  * 存储方案：
- * 1. 图片存储：imgbb 图床（永久免费）
+ * 1. 图片存储：GitHub 仓库 images/ 目录
  * 2. 数据同步：GitHub API 自动同步到 photos.json
  * 3. 所有设备都能看到相同的照片列表
  */
 
-// imgbb 配置 - 免费图床
-const IMGBB_CONFIG = {
-    apiKey: '8f87602e18258b5ec178cd0ab7c4b450',
-    // 免费版限制：每分钟最多 50 次请求，单张图片最大 32MB
-};
-
-// GitHub 配置 - 用于跨设备同步
+// GitHub 配置 - 用于跨设备同步和图片存储
 const GITHUB_CONFIG = {
-    // 仓库信息
     owner: 'jianghongzhan',
     repo: 'xiaomeng-love',
     branch: 'main',
     filePath: 'data/photos.json',
-    // GitHub Token 存储在 localStorage，需要用户首次配置
+    imagesPath: 'images',  // 图片存储目录
     tokenKey: 'xiaomeng_github_token',
 };
 
@@ -423,44 +416,62 @@ class Gallery {
         });
     }
 
-    // 上传到 imgbb 图床
-    async uploadToImgbb(file) {
-        if (!IMGBB_CONFIG.apiKey) {
-            return null;
+    // 上传图片到 GitHub 仓库
+    async uploadToGithub(file) {
+        const token = this.getGithubToken();
+        if (!token) {
+            throw new Error('请先配置 GitHub Token');
         }
 
         try {
-            // 压缩图片以减小上传大小
+            // 压缩图片
             const compressedBase64 = await this.compressImage(file, 1920, 0.85);
+
+            // 生成文件名：时间戳 + 原始文件名
+            const timestamp = Date.now();
+            const ext = file.name.split('.').pop() || 'jpg';
+            const fileName = `${timestamp}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
+            const filePath = `${GITHUB_CONFIG.imagesPath}/${fileName}`;
+
             // 移除 data:image/jpeg;base64, 前缀
             const base64Data = compressedBase64.split(',')[1];
 
-            const formData = new FormData();
-            formData.append('image', base64Data);
-            formData.append('key', IMGBB_CONFIG.apiKey);
+            // 上传到 GitHub
+            const url = `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${filePath}`;
 
-            const response = await fetch('https://api.imgbb.com/1/upload', {
-                method: 'POST',
-                body: formData
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `feat(相册): 上传照片 ${fileName}`,
+                    content: base64Data,
+                    branch: GITHUB_CONFIG.branch
+                })
             });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || '上传失败');
+            }
 
             const result = await response.json();
 
-            if (result.success) {
-                return {
-                    url: result.data.url,
-                    thumbnail: result.data.thumb?.url || result.data.url,
-                    deleteUrl: result.data.delete_url,
-                    width: result.data.width,
-                    height: result.data.height
-                };
-            } else {
-                console.error('imgbb 上传失败:', result.error);
-                return null;
-            }
+            // 返回 GitHub raw 链接
+            const imageUrl = `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${filePath}`;
+
+            console.log('✅ 图片已上传到 GitHub:', imageUrl);
+
+            return {
+                url: imageUrl,
+                path: filePath
+            };
         } catch (error) {
-            console.error('imgbb 上传出错:', error);
-            return null;
+            console.error('❌ 上传图片到 GitHub 失败:', error);
+            throw error;
         }
     }
 
@@ -523,24 +534,14 @@ class Gallery {
                 return;
             }
 
-            const hint = this.showUploadHint('正在上传照片到云端...', 'loading');
+            const hint = this.showUploadHint('正在上传照片...', 'loading');
 
             try {
-                let imageUrl = null;
+                // 上传图片到 GitHub 仓库
+                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到 GitHub...';
+                const uploadResult = await this.uploadToGithub(file);
 
-                // 上传到 imgbb 图床
-                if (IMGBB_CONFIG.apiKey) {
-                    hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上传到图床...';
-                    const uploadResult = await this.uploadToImgbb(file);
-
-                    if (uploadResult && uploadResult.url) {
-                        imageUrl = uploadResult.url;
-                    } else {
-                        hint.remove();
-                        reject(new Error('图床上传失败，请稍后重试'));
-                        return;
-                    }
-                }
+                const imageUrl = uploadResult.url;
 
                 // 创建照片对象
                 const photo = {
@@ -551,8 +552,8 @@ class Gallery {
                     type: 'image'
                 };
 
-                // 同步到 GitHub
-                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步到云端...';
+                // 更新照片列表
+                hint.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在同步照片列表...';
 
                 // 获取当前 GitHub 上的照片列表
                 const { content: githubPhotos } = await this.getGithubFile();
@@ -560,7 +561,7 @@ class Gallery {
                 // 添加新照片到列表开头
                 const updatedPhotos = [photo, ...githubPhotos.filter(p => p.src && p.src.startsWith('http'))];
 
-                // 更新 GitHub
+                // 更新 photos.json
                 await this.updateGithubPhotos(updatedPhotos);
 
                 // 更新本地显示
@@ -574,7 +575,7 @@ class Gallery {
             } catch (error) {
                 hint.remove();
                 // 显示详细错误信息
-                const errorMsg = error.message || '同步失败';
+                const errorMsg = error.message || '上传失败';
                 alert('❌ ' + errorMsg);
                 reject(error);
             }
