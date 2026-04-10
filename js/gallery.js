@@ -2,7 +2,10 @@
  * 相册功能 - 照片上传、展示、管理
  * 使用 imgbb 图床进行图片存储，支持永久保存
  *
- * 配置：在下方 IMGBB_CONFIG 中填入你的 API Key
+ * 存储方案：
+ * 1. 默认照片列表：存储在 GitHub 仓库 data/photos.json，永久保存
+ * 2. 本地上传：临时存储在 localStorage，换设备会丢失
+ * 3. 上传后复制链接给我，我帮你添加到永久列表
  */
 
 // imgbb 配置 - 请替换为你自己的 API Key
@@ -12,21 +15,44 @@ const IMGBB_CONFIG = {
     // 免费版限制：每分钟最多 50 次请求，单张图片最大 32MB
 };
 
+// 默认照片列表（永久保存在 GitHub）
+const DEFAULT_PHOTOS_URL = 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/data/photos.json';
+
 class Gallery {
     constructor() {
         this.photos = [];
         this.videos = [];
+        this.defaultPhotos = []; // 从 GitHub 加载的默认照片
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_final'; // 最终版本，不再更改
+        this.storageKey = 'xiaomeng_gallery_final';
 
         this.init();
     }
 
-    init() {
-        this.migrateOldData(); // 迁移旧数据
+    async init() {
+        // 先加载默认照片（从 GitHub）
+        await this.loadDefaultPhotos();
+        // 再加载本地照片
         this.loadFromStorage();
+        // 渲染
         this.render();
-        console.log('📷 相册初始化完成，当前照片数量:', this.photos.length);
+        console.log('📷 相册初始化完成');
+        console.log('  - 默认照片:', this.defaultPhotos.length, '张');
+        console.log('  - 本地照片:', this.photos.length, '张');
+    }
+
+    // 从 GitHub 加载默认照片列表
+    async loadDefaultPhotos() {
+        try {
+            const response = await fetch(DEFAULT_PHOTOS_URL);
+            const data = await response.json();
+            // 过滤掉空的示例照片
+            this.defaultPhotos = data.filter(p => p.src && p.src.startsWith('http'));
+            console.log('✅ 从 GitHub 加载了', this.defaultPhotos.length, '张默认照片');
+        } catch (e) {
+            console.log('📷 未找到默认照片列表');
+            this.defaultPhotos = [];
+        }
     }
 
     // 迁移旧版本数据（从所有可能的 key 迁移）
@@ -254,6 +280,11 @@ class Gallery {
                         imageUrl = uploadResult.url;
                         isPermanent = true;
                         hint.innerHTML = '<i class="fas fa-check-circle"></i> 上传成功！照片已永久保存';
+
+                        // 显示照片链接，让用户可以复制
+                        setTimeout(() => {
+                            this.showPhotoLink(imageUrl, file.name);
+                        }, 500);
                     } else {
                         hint.innerHTML = '<i class="fas fa-exclamation-circle"></i> 云端上传失败，保存到本地...';
                     }
@@ -279,7 +310,11 @@ class Gallery {
                 this.saveToStorage();
                 this.render();
 
-                setTimeout(() => hint.remove(), 2000);
+                if (isPermanent) {
+                    setTimeout(() => hint.remove(), 1500);
+                } else {
+                    setTimeout(() => hint.remove(), 2000);
+                }
 
                 resolve(photo);
             } catch (error) {
@@ -338,6 +373,34 @@ class Gallery {
             tip.style.animation = 'fadeOut 0.3s ease';
             setTimeout(() => tip.remove(), 300);
         }, 2000);
+    }
+
+    // 显示照片链接，让用户可以复制
+    showPhotoLink(url, name) {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <span class="modal-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h3>📷 照片上传成功</h3>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
+                    把这个链接发给我，我帮你添加到永久列表
+                </p>
+                <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; word-break: break-all; font-size: 0.85rem;">
+                    ${url}
+                </div>
+                <button class="submit-btn" onclick="navigator.clipboard.writeText('${url}').then(() => alert('已复制到剪贴板！'))">
+                    <i class="fas fa-copy"></i> 复制链接
+                </button>
+                <p style="color: #999; font-size: 0.8rem; margin-top: 15px;">
+                    💡 复制链接后发给我，我帮你永久保存到网站
+                </p>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
     }
 
     // 添加视频（视频太大，只能存本地）
@@ -415,14 +478,15 @@ class Gallery {
         // 清空占位符
         grid.innerHTML = '';
 
-        // 合并所有媒体并按时间排序
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        // 合并：默认照片（GitHub永久）+ 本地照片 + 视频
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
 
         if (allMedia.length === 0) {
             grid.innerHTML = `
                 <div class="gallery-placeholder">
                     <i class="fas fa-images"></i>
                     <p>点击上方按钮上传照片</p>
+                    <p class="placeholder-hint">上传后告诉我链接，我帮你永久保存</p>
                 </div>
             `;
             return;
@@ -432,7 +496,7 @@ class Gallery {
             const item = document.createElement('div');
             item.className = 'gallery-item';
             item.dataset.index = index;
-            item.dataset.type = media.type;
+            item.dataset.type = media.type || 'image';
             item.dataset.id = media.id;
 
             if (media.type === 'video') {
@@ -443,7 +507,7 @@ class Gallery {
                     </div>
                 `;
             } else {
-                item.innerHTML = `<img src="${media.src}" alt="${media.name}">`;
+                item.innerHTML = `<img src="${media.src}" alt="${media.name || '照片'}">`;
             }
 
             item.addEventListener('click', () => this.openLightbox(index));
@@ -458,7 +522,7 @@ class Gallery {
         const lightboxVideo = document.getElementById('lightboxVideo');
 
         this.currentIndex = index;
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
         const media = allMedia[index];
 
         if (media.type === 'video') {
@@ -485,14 +549,14 @@ class Gallery {
 
     // 上一张
     prevMedia() {
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
         this.currentIndex = (this.currentIndex - 1 + allMedia.length) % allMedia.length;
         this.updateLightbox();
     }
 
     // 下一张
     nextMedia() {
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
         this.currentIndex = (this.currentIndex + 1) % allMedia.length;
         this.updateLightbox();
     }
@@ -501,7 +565,7 @@ class Gallery {
     updateLightbox() {
         const lightboxImg = document.getElementById('lightboxImg');
         const lightboxVideo = document.getElementById('lightboxVideo');
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
         const media = allMedia[this.currentIndex];
 
         if (media.type === 'video') {
@@ -517,7 +581,7 @@ class Gallery {
 
     // 获取当前媒体
     getCurrentMedia() {
-        const allMedia = [...this.photos, ...this.videos].sort((a, b) => b.id - a.id);
+        const allMedia = [...this.photos, ...this.videos, ...this.defaultPhotos];
         return allMedia[this.currentIndex];
     }
 
