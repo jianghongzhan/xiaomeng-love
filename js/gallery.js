@@ -116,9 +116,13 @@ class Gallery {
             return false;
         }
 
+        const maxRetries = 5; // 最多重试 5 次
+
         try {
             // 每次都重新获取最新的 SHA，避免 409 冲突
+            console.log(`📥 获取最新 SHA (重试 ${retryCount}/${maxRetries})...`);
             const { sha } = await this.getGithubFile();
+            console.log(`📦 当前 SHA: ${sha ? sha.substring(0, 8) : 'null'}`);
 
             const content = JSON.stringify(photos, null, 2);
             const encodedContent = btoa(unescape(encodeURIComponent(content)));
@@ -149,10 +153,11 @@ class Gallery {
                 const errorData = await response.json();
                 console.error('GitHub API 返回错误:', errorData);
 
-                // 409 冲突：重试一次
-                if (response.status === 409 && retryCount < 2) {
-                    console.log('⚠️ 文件冲突，正在重试...');
-                    await new Promise(r => setTimeout(r, 500)); // 等待 500ms
+                // 409 冲突：重试
+                if (response.status === 409 && retryCount < maxRetries) {
+                    const waitTime = 1000 * (retryCount + 1); // 递增等待时间
+                    console.log(`⚠️ 文件冲突，等待 ${waitTime}ms 后重试...`);
+                    await new Promise(r => setTimeout(r, waitTime));
                     return this.updateGithubPhotos(photos, retryCount + 1);
                 }
 
