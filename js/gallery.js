@@ -11,15 +11,15 @@
 // GitHub 配置 - 用于跨设备同步和图片存储
 const GITHUB_CONFIG = {
     owner: 'jianghongzhan',
-    repo: 'xiaomeng-love',
+    repo: 'xiaoyezi-love',
     branch: 'main',
     filePath: 'data/photos.json',
     imagesPath: 'images',  // 图片存储目录
-    tokenKey: 'xiaomeng_github_token',
+    tokenKey: 'xiaoyezi_github_token',
 };
 
 // 默认照片列表（永久保存在 GitHub）
-const DEFAULT_PHOTOS_URL = 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/data/photos.json';
+const DEFAULT_PHOTOS_URL = 'https://raw.githubusercontent.com/jianghongzhan/xiaoyezi-love/main/data/photos.json';
 
 class Gallery {
     constructor() {
@@ -27,7 +27,7 @@ class Gallery {
         this.videos = [];
         this.defaultPhotos = []; // 从 GitHub 加载的默认照片
         this.currentIndex = 0;
-        this.storageKey = 'xiaomeng_gallery_final';
+        this.storageKey = 'xiaoyezi_gallery_final';
         this.githubToken = localStorage.getItem(GITHUB_CONFIG.tokenKey) || '';
         this.uploadQueue = []; // 上传队列
         this.isUploading = false; // 是否正在上传
@@ -318,12 +318,12 @@ class Gallery {
     migrateOldData() {
         // 所有可能的旧 key
         const allPossibleKeys = [
-            'xiaomeng_gallery',
-            'xiaomeng_gallery_v2',
-            'xiaomeng_gallery_v3',
-            'xiaomeng_gallery_v4',
-            'xiaomeng_gallery_v5',
-            'xiaomeng_timeline', // 防止写错
+            'xiaoyezi_gallery',
+            'xiaoyezi_gallery_v2',
+            'xiaoyezi_gallery_v3',
+            'xiaoyezi_gallery_v4',
+            'xiaoyezi_gallery_v5',
+            'xiaoyezi_timeline', // 防止写错
             'gallery'
         ];
 
@@ -974,11 +974,11 @@ class Gallery {
         // 清除所有可能的存储 key
         const keysToRemove = [
             this.storageKey,
-            'xiaomeng_gallery',
-            'xiaomeng_gallery_v2',
-            'xiaomeng_gallery_v3',
-            'xiaomeng_gallery_v4',
-            'xiaomeng_gallery_v5',
+            'xiaoyezi_gallery',
+            'xiaoyezi_gallery_v2',
+            'xiaoyezi_gallery_v3',
+            'xiaoyezi_gallery_v4',
+            'xiaoyezi_gallery_v5',
             'gallery'
         ];
 

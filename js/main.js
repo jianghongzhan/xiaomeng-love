@@ -128,7 +128,7 @@ function initLoveCounter() {
 
 // ========== 时间轴功能 ==========
 function initTimeline() {
-    const storageKey = 'xiaomeng_timeline';
+    const storageKey = 'xiaoyezi_timeline';
     const container = document.getElementById('timeline-items');
     const addBtn = document.getElementById('addTimelineBtn');
     const modal = document.getElementById('timelineModal');
@@ -353,7 +353,7 @@ function initChristmasTree() {
 
 // ========== 留言板功能 ==========
 function initMessages() {
-    const storageKey = 'xiaomeng_messages';
+    const storageKey = 'xiaoyezi_messages';
     const input = document.getElementById('messageInput');
     const sendBtn = document.getElementById('sendMessage');
     const list = document.getElementById('messagesList');
@@ -479,22 +479,22 @@ function initMusicPlayer() {
         {
             id: 'default_1',
             title: '悦神 (念白版) - KBShinya',
-            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yueshen.mp3'
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaoyezi-love/main/music/yueshen.mp3'
         },
         {
             id: 'default_2',
             title: '一个人想着一个人 (林凡氛围感版) - 艾比利',
-            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/yigeren.mp3'
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaoyezi-love/main/music/yigeren.mp3'
         },
         {
             id: 'default_3',
             title: '小宇 - 蓝心羽',
-            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaomeng-love/main/music/xiaoyu.mp3'
+            data: 'https://raw.githubusercontent.com/jianghongzhan/xiaoyezi-love/main/music/xiaoyu.mp3'
         }
     ];
 
     // IndexedDB 存储音乐
-    const DB_NAME = 'xiaomeng_music_db';
+    const DB_NAME = 'xiaoyezi_music_db';
     const STORE_NAME = 'songs';
     let db = null;
 
@@ -875,11 +875,11 @@ function initConfession() {
         }
 
         // 保存表白状态
-        localStorage.setItem('xiaomeng_confession', 'accepted');
+        localStorage.setItem('xiaoyezi_confession', 'accepted');
     });
 
     // 检查是否已经表白成功
-    if (localStorage.getItem('xiaomeng_confession') === 'accepted') {
+    if (localStorage.getItem('xiaoyezi_confession') === 'accepted') {
         confessionQuestion.style.display = 'none';
         confessionResult.style.display = 'block';
     }
@@ -890,7 +890,7 @@ function initLoveNotes() {
     const generateBtn = document.getElementById('generateBtn');
     const lovenoteText = document.getElementById('lovenoteText');
     const collectionList = document.getElementById('collectionList');
-    const storageKey = 'xiaomeng_lovenotes';
+    const storageKey = 'xiaoyezi_lovenotes';
 
     // 情话库
     const loveNotes = [
@@ -1231,7 +1231,7 @@ function initWishes() {
     const wishCount = document.getElementById('wishCount');
     if (!wishBtn || !bottleStars) return;
 
-    const STORAGE_KEY = 'xiaomeng_wishes';
+    const STORAGE_KEY = 'xiaoyezi_wishes';
 
     // 加载已有愿望
     function loadWishes() {
@@ -1313,7 +1313,7 @@ function initCheckin() {
     const calendarEl = document.getElementById('checkinCalendar');
     if (!checkinBtn) return;
 
-    const STORAGE_KEY = 'xiaomeng_checkin';
+    const STORAGE_KEY = 'xiaoyezi_checkin';
 
     // 获取今日日期字符串
     function getTodayStr() {
@@ -1474,7 +1474,7 @@ function initFortune() {
         '💝 爱情升温，甜蜜加倍'
     ];
 
-    const STORAGE_KEY = 'xiaomeng_fortune';
+    const STORAGE_KEY = 'xiaoyezi_fortune';
 
     // 获取今日运势
     function getTodayFortune() {

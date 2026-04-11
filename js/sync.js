@@ -7,10 +7,10 @@ class CloudSync {
     constructor() {
         this.config = {
             owner: 'jianghongzhan',
-            repo: 'xiaomeng-love',
+            repo: 'xiaoyezi-love',
             branch: 'main',
             dataPath: 'data',
-            tokenKey: 'xiaomeng_github_token'
+            tokenKey: 'xiaoyezi_github_token'
         };
 
         // 自动初始化 UI
@@ -125,11 +125,11 @@ class CloudSync {
         const statsDiv = document.getElementById('syncDataStats');
         if (!statsDiv) return;
 
-        const messages = JSON.parse(localStorage.getItem('xiaomeng_messages') || '[]');
-        const checkin = JSON.parse(localStorage.getItem('xiaomeng_checkin') || '{}');
-        const wishes = JSON.parse(localStorage.getItem('xiaomeng_wishes') || '[]');
-        const lovenotes = JSON.parse(localStorage.getItem('xiaomeng_lovenotes') || '[]');
-        const timeline = JSON.parse(localStorage.getItem('xiaomeng_timeline') || '[]');
+        const messages = JSON.parse(localStorage.getItem('xiaoyezi_messages') || '[]');
+        const checkin = JSON.parse(localStorage.getItem('xiaoyezi_checkin') || '{}');
+        const wishes = JSON.parse(localStorage.getItem('xiaoyezi_wishes') || '[]');
+        const lovenotes = JSON.parse(localStorage.getItem('xiaoyezi_lovenotes') || '[]');
+        const timeline = JSON.parse(localStorage.getItem('xiaoyezi_timeline') || '[]');
 
         statsDiv.innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
@@ -327,14 +327,14 @@ class CloudSync {
 
     // 同步留言数据
     async syncMessages() {
-        const localMessages = JSON.parse(localStorage.getItem('xiaomeng_messages') || '[]');
+        const localMessages = JSON.parse(localStorage.getItem('xiaoyezi_messages') || '[]');
         const cloud = await this.getFile('messages.json');
 
         if (cloud) {
             // 只有本地有数据时才合并
             if (localMessages.length > 0) {
                 const merged = this.mergeData(localMessages, cloud.content);
-                localStorage.setItem('xiaomeng_messages', JSON.stringify(merged));
+                localStorage.setItem('xiaoyezi_messages', JSON.stringify(merged));
                 // 只有配置了 Token 且合并后有新数据才写回云端
                 if (this.isConfigured() && merged.length > cloud.content.length) {
                     await this.saveFile('messages.json', merged);
@@ -343,7 +343,7 @@ class CloudSync {
                 return merged;
             } else {
                 // 本地无数据，直接使用云端数据
-                localStorage.setItem('xiaomeng_messages', JSON.stringify(cloud.content));
+                localStorage.setItem('xiaoyezi_messages', JSON.stringify(cloud.content));
                 console.log('💬 留言同步完成:', cloud.content.length, '条（从云端加载）');
                 return cloud.content;
             }
@@ -357,7 +357,7 @@ class CloudSync {
 
     // 同步打卡数据
     async syncCheckin() {
-        const localCheckin = JSON.parse(localStorage.getItem('xiaomeng_checkin') || '{}');
+        const localCheckin = JSON.parse(localStorage.getItem('xiaoyezi_checkin') || '{}');
         const cloud = await this.getFile('checkin.json');
 
         if (cloud) {
@@ -368,7 +368,7 @@ class CloudSync {
             if (localDates.length > 0) {
                 const mergedDates = [...new Set([...localDates, ...cloudDates])].sort();
                 const merged = { dates: mergedDates };
-                localStorage.setItem('xiaomeng_checkin', JSON.stringify(merged));
+                localStorage.setItem('xiaoyezi_checkin', JSON.stringify(merged));
                 // 只有配置了 Token 且合并后有新数据才写回云端
                 if (this.isConfigured() && mergedDates.length > cloudDates.length) {
                     await this.saveFile('checkin.json', merged);
@@ -377,7 +377,7 @@ class CloudSync {
                 return merged;
             } else {
                 // 本地无数据，直接使用云端数据
-                localStorage.setItem('xiaomeng_checkin', JSON.stringify(cloud.content));
+                localStorage.setItem('xiaoyezi_checkin', JSON.stringify(cloud.content));
                 console.log('📅 打卡同步完成:', cloudDates.length, '天（从云端加载）');
                 return cloud.content;
             }
@@ -391,14 +391,14 @@ class CloudSync {
 
     // 同步许愿数据
     async syncWishes() {
-        const localWishes = JSON.parse(localStorage.getItem('xiaomeng_wishes') || '[]');
+        const localWishes = JSON.parse(localStorage.getItem('xiaoyezi_wishes') || '[]');
         const cloud = await this.getFile('wishes.json');
 
         if (cloud) {
             // 只有本地有数据时才合并
             if (localWishes.length > 0) {
                 const merged = this.mergeData(localWishes, cloud.content);
-                localStorage.setItem('xiaomeng_wishes', JSON.stringify(merged));
+                localStorage.setItem('xiaoyezi_wishes', JSON.stringify(merged));
                 // 只有配置了 Token 且合并后有新数据才写回云端
                 if (this.isConfigured() && merged.length > cloud.content.length) {
                     await this.saveFile('wishes.json', merged);
@@ -407,7 +407,7 @@ class CloudSync {
                 return merged;
             } else {
                 // 本地无数据，直接使用云端数据
-                localStorage.setItem('xiaomeng_wishes', JSON.stringify(cloud.content));
+                localStorage.setItem('xiaoyezi_wishes', JSON.stringify(cloud.content));
                 console.log('🌟 许愿同步完成:', cloud.content.length, '个（从云端加载）');
                 return cloud.content;
             }
@@ -421,14 +421,14 @@ class CloudSync {
 
     // 同步情话收藏
     async syncLoveNotes() {
-        const localNotes = JSON.parse(localStorage.getItem('xiaomeng_lovenotes') || '[]');
+        const localNotes = JSON.parse(localStorage.getItem('xiaoyezi_lovenotes') || '[]');
         const cloud = await this.getFile('lovenotes.json');
 
         if (cloud) {
             // 只有本地有数据时才合并
             if (localNotes.length > 0) {
                 const merged = this.mergeData(localNotes, cloud.content);
-                localStorage.setItem('xiaomeng_lovenotes', JSON.stringify(merged));
+                localStorage.setItem('xiaoyezi_lovenotes', JSON.stringify(merged));
                 // 只有配置了 Token 且合并后有新数据才写回云端
                 if (this.isConfigured() && merged.length > cloud.content.length) {
                     await this.saveFile('lovenotes.json', merged);
@@ -437,7 +437,7 @@ class CloudSync {
                 return merged;
             } else {
                 // 本地无数据，直接使用云端数据
-                localStorage.setItem('xiaomeng_lovenotes', JSON.stringify(cloud.content));
+                localStorage.setItem('xiaoyezi_lovenotes', JSON.stringify(cloud.content));
                 console.log('💝 情话同步完成:', cloud.content.length, '条（从云端加载）');
                 return cloud.content;
             }
@@ -451,14 +451,14 @@ class CloudSync {
 
     // 同步时间轴数据
     async syncTimeline() {
-        const localTimeline = JSON.parse(localStorage.getItem('xiaomeng_timeline') || '[]');
+        const localTimeline = JSON.parse(localStorage.getItem('xiaoyezi_timeline') || '[]');
         const cloud = await this.getFile('timeline.json');
 
         if (cloud) {
             // 只有本地有数据时才合并
             if (localTimeline.length > 0) {
                 const merged = this.mergeData(localTimeline, cloud.content, 'date');
-                localStorage.setItem('xiaomeng_timeline', JSON.stringify(merged));
+                localStorage.setItem('xiaoyezi_timeline', JSON.stringify(merged));
                 // 只有配置了 Token 且合并后有新数据才写回云端
                 if (this.isConfigured() && merged.length > cloud.content.length) {
                     await this.saveFile('timeline.json', merged);
@@ -467,7 +467,7 @@ class CloudSync {
                 return merged;
             } else {
                 // 本地无数据，直接使用云端数据
-                localStorage.setItem('xiaomeng_timeline', JSON.stringify(cloud.content));
+                localStorage.setItem('xiaoyezi_timeline', JSON.stringify(cloud.content));
                 console.log('📝 时间轴同步完成:', cloud.content.length, '条（从云端加载）');
                 return cloud.content;
             }

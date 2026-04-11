@@ -13,13 +13,13 @@
 
 ## 🚀 访问地址
 
-[https://jianghongzhan.github.io/xiaomeng-love](https://jianghongzhan.github.io/xiaomeng-love)
+[https://jianghongzhan.github.io/xiaoyezi-love](https://jianghongzhan.github.io/xiaoyezi-love)
 
 ## 🛠️ 本地运行
 
 1. 克隆仓库
 ```bash
-git clone https://github.com/jianghongzhan/xiaomeng-love.git
+git clone https://github.com/jianghongzhan/xiaoyezi-love.git
 ```
 
 2. 打开 `index.html` 文件即可
