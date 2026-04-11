@@ -19,6 +19,18 @@ const CONFIG = {
 
 // ========== DOM 加载完成后初始化 ==========
 document.addEventListener('DOMContentLoaded', async () => {
+    // 先同步云端数据，再初始化各模块
+    if (window.cloudSync) {
+        console.log('🔄 开始从云端拉取数据...');
+        try {
+            await window.cloudSync.syncAll();
+            console.log('✅ 云端数据拉取完成');
+        } catch (e) {
+            console.error('云端同步失败:', e);
+        }
+    }
+
+    // 初始化各模块（此时本地存储已包含云端数据）
     initNavigation();
     initLoveCounter();
     initLoveStats();
@@ -44,25 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.christmasTree.setTarget('disperse');
         }
     }, 100);
-
-    // 云端数据同步
-    if (window.cloudSync?.isConfigured()) {
-        console.log('🔄 检测到 GitHub Token，开始同步云端数据...');
-        try {
-            await window.cloudSync.syncAll();
-            // 同步完成后重新渲染各模块
-            setTimeout(() => {
-                // 重新加载留言
-                const messagesList = document.getElementById('messagesList');
-                if (messagesList && window.initMessages) {
-                    // 触发重新渲染
-                }
-                console.log('✅ 云端数据同步完成，请刷新页面查看最新数据');
-            }, 500);
-        } catch (e) {
-            console.error('云端同步失败:', e);
-        }
-    }
 });
 
 // ========== 导航功能 ==========

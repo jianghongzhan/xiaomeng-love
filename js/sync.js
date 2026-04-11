@@ -206,19 +206,22 @@ class CloudSync {
         return !!this.getToken();
     }
 
-    // 获取云端文件内容
+    // 获取云端文件内容（公开仓库不需要 Token 也能读取）
     async getFile(fileName) {
         const token = this.getToken();
-        if (!token) return null;
 
         try {
             const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${this.config.dataPath}/${fileName}?ref=${this.config.branch}`;
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
+            const headers = {
+                'Accept': 'application/vnd.github.v3+json'
+            };
+
+            // 如果有 Token，添加认证头（提高 API 限制）
+            if (token) {
+                headers['Authorization'] = `token ${token}`;
+            }
+
+            const response = await fetch(url, { headers });
 
             if (!response.ok) {
                 if (response.status === 404) return null;
@@ -329,9 +332,13 @@ class CloudSync {
         if (cloud) {
             const merged = this.mergeData(localMessages, cloud.content);
             localStorage.setItem('xiaomeng_messages', JSON.stringify(merged));
-            await this.saveFile('messages.json', merged);
+            // 只有配置了 Token 才写回云端
+            if (this.isConfigured()) {
+                await this.saveFile('messages.json', merged);
+            }
+            console.log('💬 留言同步完成:', merged.length, '条');
             return merged;
-        } else if (localMessages.length > 0) {
+        } else if (localMessages.length > 0 && this.isConfigured()) {
             await this.saveFile('messages.json', localMessages);
             return localMessages;
         }
@@ -352,9 +359,13 @@ class CloudSync {
 
             const merged = { dates: mergedDates };
             localStorage.setItem('xiaomeng_checkin', JSON.stringify(merged));
-            await this.saveFile('checkin.json', merged);
+            // 只有配置了 Token 才写回云端
+            if (this.isConfigured()) {
+                await this.saveFile('checkin.json', merged);
+            }
+            console.log('📅 打卡同步完成:', mergedDates.length, '天');
             return merged;
-        } else if (localCheckin.dates?.length > 0) {
+        } else if (localCheckin.dates?.length > 0 && this.isConfigured()) {
             await this.saveFile('checkin.json', localCheckin);
             return localCheckin;
         }
@@ -370,9 +381,13 @@ class CloudSync {
         if (cloud) {
             const merged = this.mergeData(localWishes, cloud.content);
             localStorage.setItem('xiaomeng_wishes', JSON.stringify(merged));
-            await this.saveFile('wishes.json', merged);
+            // 只有配置了 Token 才写回云端
+            if (this.isConfigured()) {
+                await this.saveFile('wishes.json', merged);
+            }
+            console.log('🌟 许愿同步完成:', merged.length, '个');
             return merged;
-        } else if (localWishes.length > 0) {
+        } else if (localWishes.length > 0 && this.isConfigured()) {
             await this.saveFile('wishes.json', localWishes);
             return localWishes;
         }
@@ -388,9 +403,13 @@ class CloudSync {
         if (cloud) {
             const merged = this.mergeData(localNotes, cloud.content);
             localStorage.setItem('xiaomeng_lovenotes', JSON.stringify(merged));
-            await this.saveFile('lovenotes.json', merged);
+            // 只有配置了 Token 才写回云端
+            if (this.isConfigured()) {
+                await this.saveFile('lovenotes.json', merged);
+            }
+            console.log('💝 情话同步完成:', merged.length, '条');
             return merged;
-        } else if (localNotes.length > 0) {
+        } else if (localNotes.length > 0 && this.isConfigured()) {
             await this.saveFile('lovenotes.json', localNotes);
             return localNotes;
         }
@@ -406,9 +425,13 @@ class CloudSync {
         if (cloud) {
             const merged = this.mergeData(localTimeline, cloud.content, 'date');
             localStorage.setItem('xiaomeng_timeline', JSON.stringify(merged));
-            await this.saveFile('timeline.json', merged);
+            // 只有配置了 Token 才写回云端
+            if (this.isConfigured()) {
+                await this.saveFile('timeline.json', merged);
+            }
+            console.log('📝 时间轴同步完成:', merged.length, '条');
             return merged;
-        } else if (localTimeline.length > 0) {
+        } else if (localTimeline.length > 0 && this.isConfigured()) {
             await this.saveFile('timeline.json', localTimeline);
             return localTimeline;
         }
@@ -416,14 +439,11 @@ class CloudSync {
         return localTimeline;
     }
 
-    // 一键同步所有数据
+    // 一键同步所有数据（始终从云端拉取，有 Token 时才写回）
     async syncAll() {
-        if (!this.isConfigured()) {
-            console.log('⚠️ 未配置 GitHub Token，跳过云端同步');
-            return;
-        }
-
-        console.log('🔄 开始同步数据到云端...');
+        console.log('🔄 开始同步数据...');
+        console.log('  - 读取云端数据：无需 Token');
+        console.log('  - 写入云端：', this.isConfigured() ? '✅ 已配置 Token' : '❌ 未配置 Token（仅读取）');
 
         const results = await Promise.all([
             this.syncMessages(),
