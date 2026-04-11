@@ -12,6 +12,188 @@ class CloudSync {
             dataPath: 'data',
             tokenKey: 'xiaomeng_github_token'
         };
+
+        // 自动初始化 UI
+        this.initUI();
+    }
+
+    // 初始化 UI 事件绑定
+    initUI() {
+        document.addEventListener('DOMContentLoaded', () => {
+            // 绑定设置按钮点击事件
+            const syncBtn = document.getElementById('syncSettingsBtn');
+            const syncModal = document.getElementById('syncModal');
+            const closeBtn = syncModal?.querySelector('.modal-close');
+
+            syncBtn?.addEventListener('click', () => {
+                this.showConfigModal();
+            });
+
+            closeBtn?.addEventListener('click', () => {
+                syncModal.classList.remove('active');
+            });
+
+            syncModal?.addEventListener('click', (e) => {
+                if (e.target === syncModal) {
+                    syncModal.classList.remove('active');
+                }
+            });
+
+            // 保存配置按钮
+            document.getElementById('saveSyncConfig')?.addEventListener('click', () => {
+                this.saveConfig();
+            });
+
+            // 测试连接按钮
+            document.getElementById('testSyncConnection')?.addEventListener('click', () => {
+                this.testConnection();
+            });
+
+            // 立即同步按钮
+            document.getElementById('syncNowBtn')?.addEventListener('click', async () => {
+                const btn = document.getElementById('syncNowBtn');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+                btn.disabled = true;
+
+                try {
+                    await this.syncAll();
+                    btn.innerHTML = '<i class="fas fa-check"></i> 同步成功';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-sync"></i> 立即同步';
+                        btn.disabled = false;
+                    }, 2000);
+                } catch (e) {
+                    btn.innerHTML = '<i class="fas fa-times"></i> 同步失败';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-sync"></i> 立即同步';
+                        btn.disabled = false;
+                    }, 2000);
+                }
+
+                this.updateDataStats();
+            });
+
+            // 更新按钮状态
+            this.updateSyncButton();
+        });
+    }
+
+    // 显示配置模态框
+    showConfigModal() {
+        const modal = document.getElementById('syncModal');
+        const tokenInput = document.getElementById('githubTokenInput');
+
+        if (tokenInput) {
+            tokenInput.value = this.getToken();
+        }
+
+        this.updateSyncStatus();
+        this.updateDataStats();
+
+        modal?.classList.add('active');
+    }
+
+    // 更新同步按钮状态
+    updateSyncButton() {
+        const btn = document.getElementById('syncSettingsBtn');
+        if (this.isConfigured()) {
+            btn?.classList.add('configured');
+        } else {
+            btn?.classList.remove('configured');
+        }
+    }
+
+    // 更新同步状态显示
+    updateSyncStatus() {
+        const indicator = document.getElementById('syncIndicator');
+        const statusText = document.getElementById('syncStatusText');
+        const statusDiv = document.getElementById('syncStatus');
+
+        if (this.isConfigured()) {
+            indicator.style.color = '#28a745';
+            statusText.textContent = '已配置 - 数据将自动同步到云端';
+            statusDiv?.classList.add('configured');
+        } else {
+            indicator.style.color = '#dc3545';
+            statusText.textContent = '未配置 - 数据仅保存在本地';
+            statusDiv?.classList.remove('configured');
+        }
+    }
+
+    // 更新数据统计
+    updateDataStats() {
+        const statsDiv = document.getElementById('syncDataStats');
+        if (!statsDiv) return;
+
+        const messages = JSON.parse(localStorage.getItem('xiaomeng_messages') || '[]');
+        const checkin = JSON.parse(localStorage.getItem('xiaomeng_checkin') || '{}');
+        const wishes = JSON.parse(localStorage.getItem('xiaomeng_wishes') || '[]');
+        const lovenotes = JSON.parse(localStorage.getItem('xiaomeng_lovenotes') || '[]');
+        const timeline = JSON.parse(localStorage.getItem('xiaomeng_timeline') || '[]');
+
+        statsDiv.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <div>💬 留言：<strong>${messages.length}</strong> 条</div>
+                <div>📅 打卡：<strong>${(checkin.dates || []).length}</strong> 天</div>
+                <div>🌟 许愿：<strong>${wishes.length}</strong> 个</div>
+                <div>💝 情话：<strong>${lovenotes.length}</strong> 条</div>
+                <div>📝 回忆：<strong>${timeline.length}</strong> 条</div>
+            </div>
+        `;
+    }
+
+    // 保存配置
+    saveConfig() {
+        const input = document.getElementById('githubTokenInput');
+        const token = input?.value.trim();
+
+        if (!token) {
+            alert('请输入 GitHub Token');
+            return;
+        }
+
+        if (!token.startsWith('ghp_')) {
+            alert('Token 格式不正确，应该以 ghp_ 开头');
+            return;
+        }
+
+        localStorage.setItem(this.config.tokenKey, token);
+        alert('✅ GitHub Token 已保存！现在数据会自动同步到云端');
+
+        this.updateSyncStatus();
+        this.updateSyncButton();
+    }
+
+    // 测试连接
+    async testConnection() {
+        const token = document.getElementById('githubTokenInput')?.value.trim();
+
+        if (!token) {
+            alert('请先输入 GitHub Token');
+            return;
+        }
+
+        try {
+            const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (response.ok) {
+                alert('✅ 连接成功！Token 有效且有权限访问仓库');
+            } else if (response.status === 401) {
+                alert('❌ Token 无效或已过期');
+            } else if (response.status === 403) {
+                alert('❌ Token 权限不足，请确保勾选了 repo 权限');
+            } else {
+                alert('❌ 连接失败：' + response.status);
+            }
+        } catch (error) {
+            alert('❌ 连接失败：' + error.message);
+        }
     }
 
     // 获取 Token

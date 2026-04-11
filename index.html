@@ -411,6 +411,72 @@
         <i class="fas fa-arrow-up"></i>
     </button>
 
+    <!-- 云端同步设置按钮 -->
+    <button class="sync-settings-btn" id="syncSettingsBtn" title="云端同步设置">
+        <i class="fas fa-cloud"></i>
+    </button>
+
+    <!-- 云端同步配置模态框 -->
+    <div class="modal" id="syncModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close">&times;</span>
+            <h3>☁️ 云端同步设置</h3>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
+                配置 GitHub Token 后，留言、打卡、许愿等数据将自动同步到云端，所有设备都能看到
+            </p>
+
+            <!-- 同步状态 -->
+            <div class="sync-status" id="syncStatus" style="padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #f8f9fa;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-circle" id="syncIndicator" style="color: #dc3545;"></i>
+                    <span id="syncStatusText">未配置 - 数据仅保存在本地</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">
+                    GitHub Personal Access Token
+                </label>
+                <input type="password" id="githubTokenInput"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+            </div>
+
+            <div style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem;">
+                <strong>📋 获取 Token 步骤：</strong><br>
+                1. 访问 <a href="https://github.com/settings/tokens/new" target="_blank" style="color: #ff69b4;">GitHub Token 页面</a><br>
+                2. Note 填写 "xiaomeng-love"<br>
+                3. Expiration 选择 "No expiration"（永不过期）<br>
+                4. 勾选 <code>repo</code> 权限<br>
+                5. 点击 Generate token 并复制
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="submit-btn" id="saveSyncConfig">
+                    <i class="fas fa-save"></i> 保存配置
+                </button>
+                <button class="submit-btn" id="testSyncConnection" style="background: #17a2b8;">
+                    <i class="fas fa-plug"></i> 测试连接
+                </button>
+                <button class="submit-btn" id="syncNowBtn" style="background: #28a745;">
+                    <i class="fas fa-sync"></i> 立即同步
+                </button>
+            </div>
+
+            <!-- 同步数据统计 -->
+            <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="margin-bottom: 10px;"><i class="fas fa-database"></i> 数据统计</h4>
+                <div id="syncDataStats" style="font-size: 0.9rem; color: #666;">
+                    加载中...
+                </div>
+            </div>
+
+            <p style="color: #999; font-size: 0.8rem; margin-top: 15px;">
+                🔒 Token 只保存在你的浏览器本地，不会上传到任何地方
+            </p>
+        </div>
+    </div>
+
     <!-- 页脚 -->
     <footer class="footer">
         <div class="footer-content">

@@ -1738,3 +1738,55 @@ body {
         height: 250px;
     }
 }
+
+/* ===== 云端同步设置按钮 ===== */
+.sync-settings-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+    transition: all 0.3s ease;
+    z-index: 999;
+}
+
+.sync-settings-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(108, 92, 231, 0.5);
+}
+
+.sync-settings-btn.configured {
+    background: linear-gradient(135deg, #00b894, #55efc4);
+}
+
+.sync-settings-btn.configured::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #00ff88;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+/* 同步状态样式 */
+.sync-status {
+    transition: all 0.3s ease;
+}
+
+.sync-status.configured {
+    background: #d4edda !important;
+}
+
+.sync-status.configured #syncIndicator {
+    color: #28a745 !important;
+}

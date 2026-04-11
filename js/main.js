@@ -161,9 +161,13 @@ function initTimeline() {
         }
     }
 
-    // 保存数据
-    function saveData(data) {
+    // 保存数据（同时同步到云端）
+    async function saveData(data) {
         localStorage.setItem(storageKey, JSON.stringify(data));
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('timeline', data);
+        }
     }
 
     // 渲染时间线
@@ -217,7 +221,7 @@ function initTimeline() {
     });
 
     // 提交表单
-    form?.addEventListener('submit', (e) => {
+    form?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const date = document.getElementById('timelineDate').value;
@@ -225,8 +229,8 @@ function initTimeline() {
         const content = document.getElementById('timelineContent').value;
 
         const data = loadData();
-        data.push({ date, title, content });
-        saveData(data);
+        data.push({ date, title, content, time: new Date().toISOString() });
+        await saveData(data);
         render();
 
         // 关闭模态框并重置表单
@@ -941,13 +945,19 @@ function initLoveNotes() {
     }
 
     // 收藏情话
-    function saveNote(text) {
+    // 收藏情话（同时同步到云端）
+    async function saveNote(text) {
         const notes = loadNotes();
         notes.push({
             id: Date.now(),
-            text: text
+            text: text,
+            time: new Date().toISOString()
         });
         localStorage.setItem(storageKey, JSON.stringify(notes));
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('lovenotes', notes);
+        }
         renderCollection();
     }
 
@@ -978,9 +988,14 @@ function initLoveNotes() {
     }
 
     // 删除收藏
-    window.deleteNote = function(id) {
+    // 删除收藏（同时同步到云端）
+    window.deleteNote = async function(id) {
         const notes = loadNotes().filter(n => n.id !== id);
         localStorage.setItem(storageKey, JSON.stringify(notes));
+        // 云端同步
+        if (window.cloudSync?.isConfigured()) {
+            await window.cloudSync.saveDataType('lovenotes', notes);
+        }
         renderCollection();
     };
 
