@@ -229,7 +229,8 @@ class CloudSync {
             }
 
             const data = await response.json();
-            const content = JSON.parse(atob(data.content));
+            // 正确解码 UTF-8 编码的 base64 内容
+            const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
             return { content, sha: data.sha };
         } catch (e) {
             console.error('获取云端数据失败:', e);
